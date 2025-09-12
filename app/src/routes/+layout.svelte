@@ -3,6 +3,9 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 
+	export const prerender = true;
+	export const ssr = false;
+
 	let { children } = $props();
 </script>
 
