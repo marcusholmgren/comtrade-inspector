@@ -6,9 +6,8 @@
 -->
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
-    import type { parse_comtrade } from 'comtrade_rust';
 
-    let { parse_comtrade }: { parse_comtrade: typeof parse_comtrade } = $props();
+    let { parse_comtrade } = $props();
 
     let cfgFile = $state<File | null>(null);
     let datFile = $state<File | null>(null);
@@ -85,11 +84,9 @@
     </div>
     <div class="w-full max-w-2xl">
         <div
-            class="flex flex-col items-center justify-center w-full h-80 rounded-lg border-2 border-dashed  p-8 transition-colors"
-            class:border-blue-500={isDragging}
-            class:bg-gray-800/80={isDragging}
-            class:border-gray-700={!isDragging}
-            class:bg-gray-800/50={!isDragging}
+            class="flex flex-col items-center justify-center w-full h-80 rounded-lg border-2 border-dashed p-8 transition-colors {isDragging
+                ? 'border-blue-500 bg-gray-800/80'
+                : 'border-gray-700 bg-gray-800/50'}"
             on:dragover={onDragOver}
             on:dragleave={onDragLeave}
             on:drop={onDrop}

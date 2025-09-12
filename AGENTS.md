@@ -8,14 +8,14 @@ An electrical engineer analyzes COMTRADE files to understand what happened durin
 
 The Svelte application depends on the WASM module built from the Rust code.
 
-Build the WASM module
+From the root of this repository, run the following command to build the WASM module:
 
 ```bash
 cd comtrade_rust
 wasm-pack build --target web
 ```
 
-Now it is possible to run the Svelte application
+From the root of this repository, run the following command to build the Svelte application:
 
 ```bash
 cd app
@@ -35,9 +35,9 @@ npm run dev -- --open
 - Use simple & easy-to-understand language. Write in short sentences.
 
 # TECH STACK
-- Python 3.12
-- Comtrade
-- NumPy
+- Rust
+- Svelte
+- TailwindCSS
 
 # VERSION CONTROL
 - we use git for version control
