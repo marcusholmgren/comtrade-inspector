@@ -1,0 +1,148 @@
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <link
+            crossorigin=""
+            href="https://fonts.gstatic.com/"
+            rel="preconnect"
+        />
+        <link
+            as="style"
+            href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900"
+            onload="this.rel='stylesheet'"
+            rel="stylesheet"
+        />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+            rel="stylesheet"
+        />
+        <title>Stitch Design</title>
+        <link href="data:image/x-icon;base64," rel="icon" type="image/x-icon" />
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <style type="text/tailwindcss">
+            :root {
+                --primary-color: #1173d4;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-900 text-white">
+        <div
+            class="relative flex h-auto min-h-screen w-full flex-col bg-[#111418] dark group/design-root overflow-x-hidden"
+            style="font-family: Inter, &quot;Noto Sans&quot;, sans-serif"
+        >
+            <div class="layout-container flex h-full grow flex-col">
+                <header
+                    class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-gray-800 px-10 py-4"
+                >
+                    <div class="flex items-center gap-4 text-white">
+                        <div class="text-[var(--primary-color)]">
+                            <svg
+                                class="h-8 w-8"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"
+                                ></path>
+                            </svg>
+                        </div>
+                        <h2
+                            class="text-white text-xl font-bold leading-tight tracking-[-0.015em]"
+                        >
+                            File Analyzer
+                        </h2>
+                    </div>
+                    <div class="flex flex-1 justify-end gap-6">
+                        <nav class="flex items-center gap-6">
+                            <a
+                                class="text-gray-300 hover:text-white text-base font-medium leading-normal"
+                                href="#"
+                                >Home</a
+                            >
+                            <a
+                                class="text-gray-300 hover:text-white text-base font-medium leading-normal"
+                                href="#"
+                                >Documentation</a
+                            >
+                            <a
+                                class="text-gray-300 hover:text-white text-base font-medium leading-normal"
+                                href="#"
+                                >Support</a
+                            >
+                        </nav>
+                        <div class="flex items-center gap-4">
+                            <button
+                                class="flex items-center justify-center rounded-full h-10 w-10 bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+                            >
+                                <span class="material-symbols-outlined">
+                                    help
+                                </span>
+                            </button>
+                            <div
+                                class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
+                                style="
+                                    background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuBFfQeRr8_DxtZ3CvZlowhODShtxpBhUnAa-ABg9oZuzCkqXbpaw-Fb4_DD1Q2siC4sZ5U1xSjHgEw6Ynb4W6xkuaI-XZo3DG38Hvw2pvWjdNNJDoMm-QNDYjIeYvtxRTFE-0iV-1zLwS0IVYcRdI6Fes73feQDgAlKgAylSaaUhcNqMxfz_wB9MJHaLqLhAFCEUgkXTk_BI6_ovgOI7jEcBzCGzroDlReruLyWsWrFhxVrO7Iik4awjloIImpPQu8yYZVYFtjWIrE&quot;);
+                                "
+                            ></div>
+                        </div>
+                    </div>
+                </header>
+                <main class="flex-1 px-10 py-12">
+                    <div class="mx-auto flex max-w-4xl flex-col items-center">
+                        <div class="mb-12 text-center">
+                            <h1
+                                class="text-white text-4xl font-bold leading-tight tracking-tighter"
+                            >
+                                Upload COMTRADE Files
+                            </h1>
+                            <p
+                                class="mt-4 max-w-2xl text-gray-400 text-lg font-normal leading-relaxed"
+                            >
+                                Drag and drop your .CFG and .DAT files as a
+                                pair, or a single .CFF file. You can also click
+                                the button to browse your computer.
+                            </p>
+                        </div>
+                        <div class="w-full max-w-2xl">
+                            <div
+                                class="flex flex-col items-center justify-center w-full h-80 rounded-lg border-2 border-dashed border-gray-700 bg-gray-800/50 p-8 transition-colors hover:border-[var(--primary-color)] hover:bg-gray-800/80"
+                            >
+                                <div class="flex flex-col items-center gap-4">
+                                    <div class="text-[var(--primary-color)]">
+                                        <span
+                                            class="material-symbols-outlined text-6xl"
+                                        >
+                                            upload_file
+                                        </span>
+                                    </div>
+                                    <p
+                                        class="text-white text-xl font-bold leading-tight"
+                                    >
+                                        Drag &amp; drop files here
+                                    </p>
+                                    <p
+                                        class="text-gray-400 text-base font-normal"
+                                    >
+                                        Supported file types: .CFG, .DAT, .CFF
+                                    </p>
+                                    <p class="text-gray-500 text-sm">or</p>
+                                    <button
+                                        class="flex items-center justify-center gap-2 rounded-md h-12 px-6 bg-[var(--primary-color)] text-white text-base font-bold leading-normal tracking-wide shadow-lg hover:bg-opacity-90 transition-all"
+                                    >
+                                        <span class="material-symbols-outlined">
+                                            folder_open
+                                        </span>
+                                        <span class="truncate"
+                                            >Browse Files</span
+                                        >
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </body>
+</html>
