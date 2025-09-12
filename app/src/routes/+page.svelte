@@ -1,48 +1,44 @@
+<!--
+// app/src/routes/+page.svelte
+// This file contains the main page of the application.
+// This file exists to provide the main entry point for the user.
+// RELEVANT FILES: app/src/lib/components/Upload.svelte, app/src/routes/info/+page.svelte
+-->
 <script lang="ts">
-import init, { add } from 'comtrade_rust';
-import { onMount } from 'svelte';
+	import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+	import init, { parse_comtrade } from 'comtrade_rust';
+    import Upload from '$lib/components/Upload.svelte';
+    import { analysisResult } from '$lib/store';
 
-let result = $state<bigint | null>(null);
-let initialized = $state(false);
-let error = $state<string | null>(null);
+	let initialized = $state(false);
+	let error = $state<string | null>(null);
 
-onMount(async () => {
-	try {
-		// Initialize WASM module with explicit path to static file
-		await init('/comtrade_rust_bg.wasm');
-		initialized = true;
-		result = add(2n, 3n);
-		console.log("Addition:", result);
-	} catch (err) {
-		console.error("Failed to initialize WASM:", err);
-		error = err instanceof Error ? err.message : String(err);
-	}
-});
+	onMount(async () => {
+		try {
+			await init('/comtrade_rust_bg.wasm');
+			initialized = true;
+		} catch (err) {
+			console.error("Failed to initialize WASM:", err);
+			error = err instanceof Error ? err.message : String(err);
+		}
+	});
+
+    function handleAnalyse(event: CustomEvent<{ data: unknown }>) {
+        analysisResult.set(event.detail.data);
+        goto('/info');
+    }
 </script>
 
-<h1 class="text-4xl font-bold tracking-tight">Dashboard</h1>
-<p>Welcome to your dashboard.</p>
-
-{#if error}
-	<div class="error">
-		<h2>Error loading WASM:</h2>
-		<p>{error}</p>
-	</div>
-{:else if initialized && result !== null}
-	<div>
-		<h2>WASM Result:</h2>
-		<p>2 + 3 = {result.toString()}</p>
-	</div>
-{:else}
-	<p>Loading WASM module...</p>
-{/if}
-
-<style>
-	.error {
-		background-color: #fee;
-		border: 1px solid #fcc;
-		padding: 1rem;
-		border-radius: 4px;
-		margin: 1rem 0;
-	}
-</style>
+<div class="container mx-auto p-8">
+    {#if error}
+        <div class="bg-red-500/20 border border-red-500/50 text-red-400 p-4 rounded-lg">
+            <h2 class="font-bold">Error loading WASM module</h2>
+            <p>{error}</p>
+        </div>
+    {:else if initialized}
+        <Upload parse_comtrade={parse_comtrade} on:analyse={handleAnalyse} />
+    {:else}
+        <p>Loading WASM module...</p>
+    {/if}
+</div>
