@@ -66,7 +66,11 @@
             const cfgData = new Uint8Array(await cfgFile.arrayBuffer());
             const datData = new Uint8Array(await datFile.arrayBuffer());
             const result = parse_comtrade(cfgData, datData);
-            dispatch('analyse', { data: result });
+            dispatch('analyse', {
+                data: result,
+                cfgFileName: cfgFile.name,
+                datFileName: datFile.name
+            });
         } catch (e) {
             error = e instanceof Error ? e.message : String(e);
         }

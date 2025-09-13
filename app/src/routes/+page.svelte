@@ -25,8 +25,15 @@
 		}
 	});
 
-    function handleAnalyse(event: CustomEvent<{ data: unknown }>) {
-        analysisResult.set(event.detail.data);
+    function handleAnalyse(
+        event: CustomEvent<{ data: unknown; cfgFileName: string; datFileName: string }>
+    ) {
+        const result = {
+            ...(event.detail.data as object),
+            cfgFileName: event.detail.cfgFileName,
+            datFileName: event.detail.datFileName
+        };
+        analysisResult.set(result);
         goto('/info');
     }
 </script>

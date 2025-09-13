@@ -9,13 +9,30 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 
-	interface ComtradeInfo {
+	interface AnalogChannel {
+		index: number;
+		circuit_component_being_monitored: string;
+		name: string;
+		units: string;
+		min_value: number;
+		max_value: number;
+		multiplier: number;
+		offset_adder: number;
+	}
+
+	interface FileInfo {
+		cfgFileName: string;
+		datFileName: string;
+	}
+
+	interface ComtradeInfo extends FileInfo {
 		station: string;
 		recording_device_id: string;
 		start_time: string;
 		trigger_time: string;
 		data_format: string;
 		frequency: number;
+		analog_channels: AnalogChannel[];
 	}
 
 	let result: ComtradeInfo | null = null;
@@ -53,10 +70,14 @@
 	<h2 class="text-4xl font-bold tracking-tight">COMTRADE File Information</h2>
 </header>
 <div class="space-y-8">
-	<section class="rounded-lg bg-[#181C21] p-6">
-		<h3 class="mb-4 text-xl font-semibold">File Information (from .CFG)</h3>
+	<section class="rounded-lg bg-[#181C21] p-6 print:bg-transparent">
+		<h3 class="mb-4 text-xl font-semibold">File Information</h3>
 		{#if result}
-			<div class="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
+			<div class="mb-4 text-sm text-gray-400">
+				<p><span class="font-semibold text-gray-200">CFG File:</span> {result.cfgFileName}</p>
+				<p><span class="font-semibold text-gray-200">DAT File:</span> {result.datFileName}</p>
+			</div>
+			<div class="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-[2fr_1fr]">
 				<div class="flex justify-between border-b border-[#3b4754] pb-2">
 					<p class="text-[#9dabb9]">Station</p>
 					<p>{result.station}</p>
@@ -93,6 +114,7 @@
 				<thead class="bg-[#283039] text-left">
 					<tr>
 						<th class="p-3">Channel</th>
+						<th class="p-3">Circuit</th>
 						<th class="p-3">Name</th>
 						<th class="p-3">Units</th>
 						<th class="p-3">Min</th>
@@ -102,33 +124,20 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr class="border-b border-[#3b4754]">
-						<td class="p-3 font-medium">1</td>
-						<td class="p-3 text-[#9dabb9]"> Voltage A </td>
-						<td class="p-3 text-[#9dabb9]">V</td>
-						<td class="p-3 text-[#9dabb9]"> -1000 </td>
-						<td class="p-3 text-[#9dabb9]">1000</td>
-						<td class="p-3 text-[#9dabb9]">0.1</td>
-						<td class="p-3 text-[#9dabb9]">0</td>
-					</tr>
-					<tr class="border-b border-[#3b4754]">
-						<td class="p-3 font-medium">2</td>
-						<td class="p-3 text-[#9dabb9]"> Voltage B </td>
-						<td class="p-3 text-[#9dabb9]">V</td>
-						<td class="p-3 text-[#9dabb9]"> -1000 </td>
-						<td class="p-3 text-[#9dabb9]">1000</td>
-						<td class="p-3 text-[#9dabb9]">0.1</td>
-						<td class="p-3 text-[#9dabb9]">0</td>
-					</tr>
-					<tr>
-						<td class="p-3 font-medium">3</td>
-						<td class="p-3 text-[#9dabb9]"> Voltage C </td>
-						<td class="p-3 text-[#9dabb9]">V</td>
-						<td class="p-3 text-[#9dabb9]"> -1000 </td>
-						<td class="p-3 text-[#9dabb9]">1000</td>
-						<td class="p-3 text-[#9dabb9]">0.1</td>
-						<td class="p-3 text-[#9dabb9]">0</td>
-					</tr>
+					{#if result}
+						{#each result.analog_channels as channel (channel.index)}
+							<tr class="border-b border-[#3b4754]">
+								<td class="p-3 font-medium">{channel.index}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.circuit_component_being_monitored}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.name}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.units}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.min_value}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.max_value}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.multiplier}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.offset_adder}</td>
+							</tr>
+						{/each}
+					{/if}
 				</tbody>
 			</table>
 		</div>

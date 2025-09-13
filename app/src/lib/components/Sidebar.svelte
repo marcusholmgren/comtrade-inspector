@@ -1,4 +1,4 @@
-<aside class="w-64 bg-[#181C21] p-6 flex flex-col justify-between">
+<aside class="w-64 bg-[#181C21] p-6 flex flex-col justify-between print:hidden">
     <div>
         <div class="flex items-center gap-2 mb-8">
             <span
