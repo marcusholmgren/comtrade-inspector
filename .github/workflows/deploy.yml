@@ -58,7 +58,7 @@ jobs:
         env:
           # This will be used to set the base path in vite.config.ts
           # The value is the repository name, which is needed for GitHub Pages
-          BASE_URL: /${{ github.event.repository.name }}/
+          BASE_URL: /${{ github.event.repository.name }}
         run: npm run build
         working-directory: ./app
 
