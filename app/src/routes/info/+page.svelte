@@ -5,173 +5,158 @@
 // RELEVANT FILES: app/src/routes/+page.svelte, app/src/lib/store.ts
 -->
 <script lang="ts">
-    import { analysisResult } from '$lib/store';
-    import { onMount } from 'svelte';
-    import { goto } from '$app/navigation';
+	import { analysisResult } from '$lib/store';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 
-    let result: unknown;
+	interface ComtradeInfo {
+		station: string;
+		recording_device_id: string;
+		start_time: string;
+		trigger_time: string;
+		data_format: string;
+		frequency: number;
+	}
 
-    onMount(() => {
-        const unsubscribe = analysisResult.subscribe(value => {
-            if (value) {
-                result = value;
-            } else {
-                // If there's no result, redirect back to the upload page.
-                goto('/');
-            }
-        });
+	let result: ComtradeInfo | null = null;
 
-        return () => unsubscribe();
-    });
+	onMount(() => {
+		const unsubscribe = analysisResult.subscribe((value) => {
+			if (value) {
+				result = value as ComtradeInfo;
+			} else {
+				// If there's no result, redirect back to the upload page.
+				goto('/');
+			}
+		});
+
+		return () => unsubscribe();
+	});
+
+	const dateFormater = new Intl.DateTimeFormat('en-US', {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		fractionalSecondDigits: 3,
+		timeZoneName: 'short'
+	});
+
+	const formatDate = (dateString: string) => {
+		return dateFormater.format(new Date(dateString));
+	};
 </script>
 
 <header class="mb-8">
-    <h2 class="text-4xl font-bold tracking-tight">
-        COMTRADE File Information
-    </h2>
+	<h2 class="text-4xl font-bold tracking-tight">COMTRADE File Information</h2>
 </header>
 <div class="space-y-8">
-    <section class="bg-[#181C21] rounded-lg p-6">
-        <h3 class="text-xl font-semibold mb-4">
-            File Information (from .CFG)
-        </h3>
-        {#if result}
-            <p>{result}</p>
-        {:else}
-            <p>No analysis result available. Please upload a file first.</p>
-        {/if}
-        <div
-            class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4"
-        >
-            <div
-                class="flex justify-between border-b border-[#3b4754] pb-2"
-            >
-                <p class="text-[#9dabb9]">Station</p>
-                <p>Station A</p>
-            </div>
-            <div
-                class="flex justify-between border-b border-[#3b4754] pb-2"
-            >
-                <p class="text-[#9dabb9]">Recorder ID</p>
-                <p>REC001</p>
-            </div>
-            <div
-                class="flex justify-between border-b border-[#3b4754] pb-2"
-            >
-                <p class="text-[#9dabb9]">Start Time</p>
-                <p>15/01/2024, 09:59:58.123</p>
-            </div>
-            <div
-                class="flex justify-between border-b border-[#3b4754] pb-2"
-            >
-                <p class="text-[#9dabb9]">Trigger Time</p>
-                <p>15/01/2024, 10:00:00.000</p>
-            </div>
-            <div
-                class="flex justify-between border-b border-[#3b4754] pb-2"
-            >
-                <p class="text-[#9dabb9]">File Type</p>
-                <p>ASCII</p>
-            </div>
-            <div
-                class="flex justify-between border-b border-[#3b4754] pb-2"
-            >
-                <p class="text-[#9dabb9]">Frequency</p>
-                <p>50 Hz</p>
-            </div>
-        </div>
-    </section>
-    <section>
-        <h3 class="text-xl font-semibold mb-4">
-            Analog Channels
-        </h3>
-        <div class="overflow-x-auto bg-[#181C21] rounded-lg">
-            <table class="min-w-full text-sm">
-                <thead class="bg-[#283039] text-left">
-                    <tr>
-                        <th class="p-3">Channel</th>
-                        <th class="p-3">Name</th>
-                        <th class="p-3">Units</th>
-                        <th class="p-3">Min</th>
-                        <th class="p-3">Max</th>
-                        <th class="p-3">Multiplier</th>
-                        <th class="p-3">Offset</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="border-b border-[#3b4754]">
-                        <td class="p-3 font-medium">1</td>
-                        <td class="p-3 text-[#9dabb9]">
-                            Voltage A
-                        </td>
-                        <td class="p-3 text-[#9dabb9]">V</td>
-                        <td class="p-3 text-[#9dabb9]">
-                            -1000
-                        </td>
-                        <td class="p-3 text-[#9dabb9]">1000</td>
-                        <td class="p-3 text-[#9dabb9]">0.1</td>
-                        <td class="p-3 text-[#9dabb9]">0</td>
-                    </tr>
-                    <tr class="border-b border-[#3b4754]">
-                        <td class="p-3 font-medium">2</td>
-                        <td class="p-3 text-[#9dabb9]">
-                            Voltage B
-                        </td>
-                        <td class="p-3 text-[#9dabb9]">V</td>
-                        <td class="p-3 text-[#9dabb9]">
-                            -1000
-                        </td>
-                        <td class="p-3 text-[#9dabb9]">1000</td>
-                        <td class="p-3 text-[#9dabb9]">0.1</td>
-                        <td class="p-3 text-[#9dabb9]">0</td>
-                    </tr>
-                    <tr>
-                        <td class="p-3 font-medium">3</td>
-                        <td class="p-3 text-[#9dabb9]">
-                            Voltage C
-                        </td>
-                        <td class="p-3 text-[#9dabb9]">V</td>
-                        <td class="p-3 text-[#9dabb9]">
-                            -1000
-                        </td>
-                        <td class="p-3 text-[#9dabb9]">1000</td>
-                        <td class="p-3 text-[#9dabb9]">0.1</td>
-                        <td class="p-3 text-[#9dabb9]">0</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
-    <section>
-        <h3 class="text-xl font-semibold mb-4">
-            Digital Channels
-        </h3>
-        <div class="overflow-x-auto bg-[#181C21] rounded-lg">
-            <table class="min-w-full text-sm">
-                <thead class="bg-[#283039] text-left">
-                    <tr>
-                        <th class="p-3 w-1/3">Channel</th>
-                        <th class="p-3 w-1/3">Name</th>
-                        <th class="p-3 w-1/3">Initial Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="border-b border-[#3b4754]">
-                        <td class="p-3 font-medium">1</td>
-                        <td class="p-3 text-[#9dabb9]">
-                            Breaker Status
-                        </td>
-                        <td class="p-3 text-[#9dabb9]">0</td>
-                    </tr>
-                    <tr>
-                        <td class="p-3 font-medium">2</td>
-                        <td class="p-3 text-[#9dabb9]">
-                            Trip Signal
-                        </td>
-                        <td class="p-3 text-[#9dabb9]">0</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+	<section class="rounded-lg bg-[#181C21] p-6">
+		<h3 class="mb-4 text-xl font-semibold">File Information (from .CFG)</h3>
+		{#if result}
+			<div class="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
+				<div class="flex justify-between border-b border-[#3b4754] pb-2">
+					<p class="text-[#9dabb9]">Station</p>
+					<p>{result.station}</p>
+				</div>
+				<div class="flex justify-between border-b border-[#3b4754] pb-2">
+					<p class="text-[#9dabb9]">Recorder ID</p>
+					<p>{result.recording_device_id}</p>
+				</div>
+				<div class="flex justify-between border-b border-[#3b4754] pb-2">
+					<p class="text-[#9dabb9]">Start Time</p>
+					<p>{formatDate(result.start_time)}</p>
+				</div>
+				<div class="flex justify-between border-b border-[#3b4754] pb-2">
+					<p class="text-[#9dabb9]">File Type</p>
+					<p>{result.data_format}</p>
+				</div>
+				<div class="flex justify-between border-b border-[#3b4754] pb-2">
+					<p class="text-[#9dabb9]">Trigger Time</p>
+					<p>{formatDate(result.trigger_time)}</p>
+				</div>
+				<div class="flex justify-between border-b border-[#3b4754] pb-2">
+					<p class="text-[#9dabb9]">Frequency</p>
+					<p>{result.frequency} Hz</p>
+				</div>
+			</div>
+		{:else}
+			<p>No analysis result available. Please upload a file first.</p>
+		{/if}
+	</section>
+	<section>
+		<h3 class="mb-4 text-xl font-semibold">Analog Channels</h3>
+		<div class="overflow-x-auto rounded-lg bg-[#181C21]">
+			<table class="min-w-full text-sm">
+				<thead class="bg-[#283039] text-left">
+					<tr>
+						<th class="p-3">Channel</th>
+						<th class="p-3">Name</th>
+						<th class="p-3">Units</th>
+						<th class="p-3">Min</th>
+						<th class="p-3">Max</th>
+						<th class="p-3">Multiplier</th>
+						<th class="p-3">Offset</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="border-b border-[#3b4754]">
+						<td class="p-3 font-medium">1</td>
+						<td class="p-3 text-[#9dabb9]"> Voltage A </td>
+						<td class="p-3 text-[#9dabb9]">V</td>
+						<td class="p-3 text-[#9dabb9]"> -1000 </td>
+						<td class="p-3 text-[#9dabb9]">1000</td>
+						<td class="p-3 text-[#9dabb9]">0.1</td>
+						<td class="p-3 text-[#9dabb9]">0</td>
+					</tr>
+					<tr class="border-b border-[#3b4754]">
+						<td class="p-3 font-medium">2</td>
+						<td class="p-3 text-[#9dabb9]"> Voltage B </td>
+						<td class="p-3 text-[#9dabb9]">V</td>
+						<td class="p-3 text-[#9dabb9]"> -1000 </td>
+						<td class="p-3 text-[#9dabb9]">1000</td>
+						<td class="p-3 text-[#9dabb9]">0.1</td>
+						<td class="p-3 text-[#9dabb9]">0</td>
+					</tr>
+					<tr>
+						<td class="p-3 font-medium">3</td>
+						<td class="p-3 text-[#9dabb9]"> Voltage C </td>
+						<td class="p-3 text-[#9dabb9]">V</td>
+						<td class="p-3 text-[#9dabb9]"> -1000 </td>
+						<td class="p-3 text-[#9dabb9]">1000</td>
+						<td class="p-3 text-[#9dabb9]">0.1</td>
+						<td class="p-3 text-[#9dabb9]">0</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
+	<section>
+		<h3 class="mb-4 text-xl font-semibold">Digital Channels</h3>
+		<div class="overflow-x-auto rounded-lg bg-[#181C21]">
+			<table class="min-w-full text-sm">
+				<thead class="bg-[#283039] text-left">
+					<tr>
+						<th class="w-1/3 p-3">Channel</th>
+						<th class="w-1/3 p-3">Name</th>
+						<th class="w-1/3 p-3">Initial Value</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="border-b border-[#3b4754]">
+						<td class="p-3 font-medium">1</td>
+						<td class="p-3 text-[#9dabb9]"> Breaker Status </td>
+						<td class="p-3 text-[#9dabb9]">0</td>
+					</tr>
+					<tr>
+						<td class="p-3 font-medium">2</td>
+						<td class="p-3 text-[#9dabb9]"> Trip Signal </td>
+						<td class="p-3 text-[#9dabb9]">0</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
 </div>
