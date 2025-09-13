@@ -7,6 +7,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import init, { parse_comtrade, init_panic_hook } from 'comtrade_rust';
 	import Upload from '$lib/components/Upload.svelte';
 	import { analysisResult } from '$lib/store';
@@ -54,11 +55,5 @@
 		<Upload {parse_comtrade} on:analyse={handleAnalyse} />
 	{:else}
 		<p>Loading WASM module...</p>
-	{/if}
-</div>
- module...</p>
-	{/if}
-</div>
- module...</p>
 	{/if}
 </div>
