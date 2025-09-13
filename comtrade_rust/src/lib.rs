@@ -4,6 +4,7 @@
 // RELEVANT FILES: app/src/routes/info/+page.svelte
 
 use comtrade::{AnalogChannel, ComtradeParserBuilder, DataFormat};
+use encoding_rs;
 use serde::Serialize;
 use std::{io::BufReader, panic};
 use wasm_bindgen::prelude::*;
@@ -62,22 +63,34 @@ pub fn parse_comtrade(
     cfg_file: Option<Box<[u8]>>,
     dat_file: Option<Box<[u8]>>,
     cff_file: Option<Box<[u8]>>,
+    encoding_label: Option<String>,
 ) -> Result<JsValue, JsValue> {
     let result = panic::catch_unwind(move || {
-        let mut builder = ComtradeParserBuilder::new();
+        if let Some(cff_data) = cff_file {
+            // For CFF files, we assume UTF-8 as we can't easily decode only the text part
+            // without a more sophisticated parsing approach.
+            let cff_reader = BufReader::new(cff_data.as_ref());
+            ComtradeParserBuilder::new()
+                .cff_file(cff_reader)
+                .build()
+                .parse()
+        } else if let (Some(cfg_data), Some(dat_data)) = (cfg_file, dat_file) {
+            let encoding = encoding_label
+                .as_deref()
+                .and_then(|label| encoding_rs::Encoding::for_label(label.as_bytes()))
+                .unwrap_or(encoding_rs::UTF_8);
 
-        if cff_file.is_some() {
-            let cff_reader = BufReader::new(cff_file.unwrap().as_ref());
-            builder = builder.cff_file(cff_reader);
-        } else if cfg_file.is_some() && dat_file.is_some() {
-            let cfg_reader = BufReader::new(cfg_file.unwrap().as_ref());
-            let dat_reader = BufReader::new(dat_file.unwrap().as_ref());
-            builder = builder.cfg_file(cfg_reader).dat_file(dat_reader);
+            let (decoded_cfg, _, _) = encoding.decode(&cfg_data);
+            let cfg_reader = BufReader::new(decoded_cfg.as_bytes());
+            let dat_reader = BufReader::new(dat_data.as_ref()); // DAT file is binary
+            ComtradeParserBuilder::new()
+                .cfg_file(cfg_reader)
+                .dat_file(dat_reader)
+                .build()
+                .parse()
         } else {
-            return Err("Either a CFF file or a CFG and a DAT file must be provided.".into());
+            panic!("Invalid file combination: either a CFF file, or both a CFG and a DAT file must be provided.");
         }
-
-        builder.parse()
     });
 
     match result {

@@ -85,6 +85,7 @@ version = "0.1.0"
 dependencies = [
  "comtrade",
  "console_error_panic_hook",
+ "encoding_rs",
  "serde",
  "serde-wasm-bindgen",
  "wasm-bindgen",
@@ -170,6 +171,15 @@ checksum = "58a94ace95092c5acb1e97a7e846b310cfbd499652f72297da7493f618a98d73"
 dependencies = [
  "derive_builder_core",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "encoding_rs"
+version = "0.8.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75030f3c4f45dafd7586dd6780965a8c7e8e285a5ecb86713e63a79c5b2766f3"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]
