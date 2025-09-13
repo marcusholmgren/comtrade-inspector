@@ -18,16 +18,26 @@ fn data_format_to_str(format: &DataFormat) -> &'static str {
     }
 }
 
+/// Represents a single analog channel from a COMTRADE file, formatted for serialization.
 #[derive(Serialize, Clone)]
 pub struct SerializableAnalogChannel {
+    /// The channel index number.
     pub index: u32,
+    /// The name of the analog channel.
     pub name: String,
+    /// The units of measurement for the channel (e.g., "V", "A").
     pub units: String,
+    /// The minimum value recorded for this channel.
     pub min_value: f64,
+    /// The maximum value recorded for this channel.
     pub max_value: f64,
+    /// The multiplier to apply to the channel's data values.
     pub multiplier: f64,
+    /// The offset to add to the channel's data values.
     pub offset_adder: f64,
+    /// The phase of the channel (e.g., "A", "B", "C").
     pub phase: String,
+    /// The component of the power system circuit being monitored.
     pub circuit_component_being_monitored: String,
 }
 
@@ -47,17 +57,40 @@ impl From<&AnalogChannel> for SerializableAnalogChannel {
     }
 }
 
+/// Contains the parsed information from a COMTRADE file.
 #[derive(Serialize)]
 pub struct ComtradeInfo {
+    /// The name of the substation or station.
     pub station: String,
+    /// The identifier of the recording device.
     pub recording_device_id: String,
+    /// The start timestamp of the recording.
     pub start_time: String,
+    /// The trigger timestamp of the event.
     pub trigger_time: String,
+    /// The data format of the DAT file (e.g., "ASCII", "BINARY").
     pub data_format: String,
+    /// The nominal line frequency in Hz.
     pub frequency: f64,
+    /// A list of the analog channels present in the file.
     pub analog_channels: Vec<SerializableAnalogChannel>,
 }
 
+/// Parses a COMTRADE file from its constituent parts.
+///
+/// Accepts either a single CFF file, or a pair of CFG and DAT files.
+///
+/// # Arguments
+///
+/// * `cfg_file` - An optional byte array of the .cfg file content.
+/// * `dat_file` - An optional byte array of the .dat file content.
+/// * `cff_file` - An optional byte array of the .cff file content.
+/// * `encoding_label` - An optional string label for the text encoding of the CFG file (e.g., "utf-8", "latin1").
+///                      Defaults to UTF-8 if not provided. This is ignored for CFF files.
+///
+/// # Returns
+///
+/// A `JsValue` containing the serialized `ComtradeInfo` on success, or a `JsValue` with an error message on failure.
 #[wasm_bindgen]
 pub fn parse_comtrade(
     cfg_file: Option<Box<[u8]>>,
@@ -128,6 +161,8 @@ pub fn parse_comtrade(
     }
 }
 
+/// Sets up a panic hook to log panic messages to the browser's developer console.
+/// This should be called once when the Wasm module is initialized.
 #[wasm_bindgen]
 pub fn init_panic_hook() {
     console_error_panic_hook::set_once();

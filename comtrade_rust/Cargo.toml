@@ -1,7 +1,11 @@
 [package]
 name = "comtrade_rust"
+description = "A WASM wrapper over the comtrade library for working with COMTRADE files"
+authors = ["Marcus Holmgren <marcus.holmgren1@gmail.com>"]
+license = "MIT"
 version = "0.1.0"
 edition = "2024"
+repository = "https://github.com/marcus-holmgren/comtrade-rust"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
