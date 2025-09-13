@@ -26,6 +26,8 @@ pub struct SerializableAnalogChannel {
     pub max_value: f64,
     pub multiplier: f64,
     pub offset_adder: f64,
+    pub phase: String,
+    pub circuit_component_being_monitored: String,
 }
 
 impl From<&AnalogChannel> for SerializableAnalogChannel {
@@ -38,6 +40,8 @@ impl From<&AnalogChannel> for SerializableAnalogChannel {
             max_value: channel.max_value,
             multiplier: channel.multiplier,
             offset_adder: channel.offset_adder,
+            phase: channel.phase.clone(),
+            circuit_component_being_monitored: channel.circuit_component_being_monitored.clone(),
         }
     }
 }
