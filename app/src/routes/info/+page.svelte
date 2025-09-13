@@ -9,6 +9,16 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 
+	interface AnalogChannel {
+		index: number;
+		name: string;
+		units: string;
+		min_value: number;
+		max_value: number;
+		multiplier: number;
+		offset_adder: number;
+	}
+
 	interface ComtradeInfo {
 		station: string;
 		recording_device_id: string;
@@ -16,6 +26,7 @@
 		trigger_time: string;
 		data_format: string;
 		frequency: number;
+		analog_channels: AnalogChannel[];
 	}
 
 	let result: ComtradeInfo | null = null;
@@ -102,33 +113,19 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr class="border-b border-[#3b4754]">
-						<td class="p-3 font-medium">1</td>
-						<td class="p-3 text-[#9dabb9]"> Voltage A </td>
-						<td class="p-3 text-[#9dabb9]">V</td>
-						<td class="p-3 text-[#9dabb9]"> -1000 </td>
-						<td class="p-3 text-[#9dabb9]">1000</td>
-						<td class="p-3 text-[#9dabb9]">0.1</td>
-						<td class="p-3 text-[#9dabb9]">0</td>
-					</tr>
-					<tr class="border-b border-[#3b4754]">
-						<td class="p-3 font-medium">2</td>
-						<td class="p-3 text-[#9dabb9]"> Voltage B </td>
-						<td class="p-3 text-[#9dabb9]">V</td>
-						<td class="p-3 text-[#9dabb9]"> -1000 </td>
-						<td class="p-3 text-[#9dabb9]">1000</td>
-						<td class="p-3 text-[#9dabb9]">0.1</td>
-						<td class="p-3 text-[#9dabb9]">0</td>
-					</tr>
-					<tr>
-						<td class="p-3 font-medium">3</td>
-						<td class="p-3 text-[#9dabb9]"> Voltage C </td>
-						<td class="p-3 text-[#9dabb9]">V</td>
-						<td class="p-3 text-[#9dabb9]"> -1000 </td>
-						<td class="p-3 text-[#9dabb9]">1000</td>
-						<td class="p-3 text-[#9dabb9]">0.1</td>
-						<td class="p-3 text-[#9dabb9]">0</td>
-					</tr>
+					{#if result}
+						{#each result.analog_channels as channel, i}
+							<tr class="border-b border-[#3b4754]">
+								<td class="p-3 font-medium">{channel.index}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.name}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.units}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.min_value}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.max_value}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.multiplier}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.offset_adder}</td>
+							</tr>
+						{/each}
+					{/if}
 				</tbody>
 			</table>
 		</div>

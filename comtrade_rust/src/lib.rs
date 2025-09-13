@@ -1,4 +1,9 @@
-use comtrade::{ComtradeParserBuilder, DataFormat};
+// comtrade_rust/src/lib.rs
+// This file is the main entry point for the Rust code that is compiled to WebAssembly.
+// This file exists to parse COMTRADE files and return the information to the Svelte frontend.
+// RELEVANT FILES: app/src/routes/info/+page.svelte
+
+use comtrade::{AnalogChannel, ComtradeParserBuilder, DataFormat};
 use serde::Serialize;
 use std::{io::BufReader, panic};
 use wasm_bindgen::prelude::*;
@@ -12,6 +17,31 @@ fn data_format_to_str(format: &DataFormat) -> &'static str {
     }
 }
 
+#[derive(Serialize, Clone)]
+pub struct SerializableAnalogChannel {
+    pub index: u32,
+    pub name: String,
+    pub units: String,
+    pub min_value: f64,
+    pub max_value: f64,
+    pub multiplier: f64,
+    pub offset_adder: f64,
+}
+
+impl From<&AnalogChannel> for SerializableAnalogChannel {
+    fn from(channel: &AnalogChannel) -> Self {
+        Self {
+            index: channel.index,
+            name: channel.name.clone(),
+            units: channel.units.clone(),
+            min_value: channel.min_value,
+            max_value: channel.max_value,
+            multiplier: channel.multiplier,
+            offset_adder: channel.offset_adder,
+        }
+    }
+}
+
 #[derive(Serialize)]
 pub struct ComtradeInfo {
     pub station: String,
@@ -20,6 +50,7 @@ pub struct ComtradeInfo {
     pub trigger_time: String,
     pub data_format: String,
     pub frequency: f64,
+    pub analog_channels: Vec<SerializableAnalogChannel>,
 }
 
 #[wasm_bindgen]
@@ -37,6 +68,11 @@ pub fn parse_comtrade(cfg_file: &[u8], dat_file: &[u8]) -> Result<JsValue, JsVal
 
     match result {
         Ok(Ok(comtrade)) => {
+            let analog_channels: Vec<SerializableAnalogChannel> = comtrade
+                .analog_channels
+                .iter()
+                .map(SerializableAnalogChannel::from)
+                .collect();
             let info = ComtradeInfo {
                 station: comtrade.station_name.clone(),
                 recording_device_id: comtrade.recording_device_id.clone(),
@@ -44,6 +80,7 @@ pub fn parse_comtrade(cfg_file: &[u8], dat_file: &[u8]) -> Result<JsValue, JsVal
                 trigger_time: comtrade.trigger_time.to_string(),
                 data_format: data_format_to_str(&comtrade.data_format).to_string(),
                 frequency: comtrade.line_frequency,
+                analog_channels,
             };
             serde_wasm_bindgen::to_value(&info).map_err(|e| JsValue::from_str(&e.to_string()))
         }
