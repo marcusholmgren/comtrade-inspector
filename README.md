@@ -1,5 +1,7 @@
 # comtrade inspector
 
+[![Deploy to GitHub Pages](https://github.com/marcusholmgren/comtrade-inspector/actions/workflows/deploy.yml/badge.svg)](https://github.com/marcusholmgren/comtrade-inspector/actions/workflows/deploy.yml)
+
 You need to have [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) installed.
 
 ```bash

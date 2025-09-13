@@ -16,7 +16,7 @@
 
 	onMount(async () => {
 		try {
-			await init('/comtrade_rust_bg.wasm');
+			await init(`${base}/comtrade_rust_bg.wasm`);
 			init_panic_hook();
 			initialized = true;
 		} catch (err) {
@@ -40,7 +40,7 @@
 			cffFileName: event.detail.cffFileName
 		};
 		analysisResult.set(result);
-		goto('/info');
+		goto(`${base}/info`);
 	}
 </script>
 
@@ -54,5 +54,11 @@
 		<Upload {parse_comtrade} on:analyse={handleAnalyse} />
 	{:else}
 		<p>Loading WASM module...</p>
+	{/if}
+</div>
+ module...</p>
+	{/if}
+</div>
+ module...</p>
 	{/if}
 </div>
