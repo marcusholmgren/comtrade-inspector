@@ -21,8 +21,9 @@
 	}
 
 	interface FileInfo {
-		cfgFileName: string;
-		datFileName: string;
+		cfgFileName?: string;
+		datFileName?: string;
+		cffFileName?: string;
 	}
 
 	interface ComtradeInfo extends FileInfo {
@@ -74,8 +75,12 @@
 		<h3 class="mb-4 text-xl font-semibold">File Information</h3>
 		{#if result}
 			<div class="mb-4 text-sm text-gray-400">
-				<p><span class="font-semibold text-gray-200">CFG File:</span> {result.cfgFileName}</p>
-				<p><span class="font-semibold text-gray-200">DAT File:</span> {result.datFileName}</p>
+				{#if result.cffFileName}
+					<p><span class="font-semibold text-gray-200">CFF File:</span> {result.cffFileName}</p>
+				{:else}
+					<p><span class="font-semibold text-gray-200">CFG File:</span> {result.cfgFileName}</p>
+					<p><span class="font-semibold text-gray-200">DAT File:</span> {result.datFileName}</p>
+				{/if}
 			</div>
 			<div class="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-[2fr_1fr]">
 				<div class="flex justify-between border-b border-[#3b4754] pb-2">

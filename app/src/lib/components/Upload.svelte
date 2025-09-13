@@ -11,6 +11,7 @@
 
     let cfgFile = $state<File | null>(null);
     let datFile = $state<File | null>(null);
+    let cffFile = $state<File | null>(null);
     let isDragging = $state(false);
     let error = $state<string | null>(null);
 
@@ -23,12 +24,14 @@
             const lowerCaseName = file.name.toLowerCase();
             if (lowerCaseName.endsWith('.cfg')) {
                 cfgFile = file;
+                cffFile = null;
             } else if (lowerCaseName.endsWith('.dat')) {
                 datFile = file;
+                cffFile = null;
             } else if (lowerCaseName.endsWith('.cff')) {
-                // For CFF files, we can extract both CFG and DAT, but that's a future enhancement.
-                // For now, we'll just note that it's a CFF file.
-                console.log("CFF file selected, but not yet supported for automatic parsing.");
+                cffFile = file;
+                cfgFile = null;
+                datFile = null;
             }
         }
     }
@@ -58,18 +61,27 @@
     }
 
     async function analyseFiles() {
-        if (!cfgFile || !datFile) {
-            return;
-        }
         error = null;
         try {
-            const cfgData = new Uint8Array(await cfgFile.arrayBuffer());
-            const datData = new Uint8Array(await datFile.arrayBuffer());
-            const result = parse_comtrade(cfgData, datData);
+            let result;
+            let fileInfo;
+
+            if (cffFile) {
+                const cffData = new Uint8Array(await cffFile.arrayBuffer());
+                result = parse_comtrade(null, null, cffData);
+                fileInfo = { cffFileName: cffFile.name };
+            } else if (cfgFile && datFile) {
+                const cfgData = new Uint8Array(await cfgFile.arrayBuffer());
+                const datData = new Uint8Array(await datFile.arrayBuffer());
+                result = parse_comtrade(cfgData, datData, null);
+                fileInfo = { cfgFileName: cfgFile.name, datFileName: datFile.name };
+            } else {
+                return;
+            }
+
             dispatch('analyse', {
                 data: result,
-                cfgFileName: cfgFile.name,
-                datFileName: datFile.name
+                ...fileInfo
             });
         } catch (e) {
             error = e instanceof Error ? e.message : String(e);
@@ -118,6 +130,12 @@
             </label>
         </div>
         <div class="mt-4 space-y-2">
+            {#if cffFile}
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                    <span class="text-white">{cffFile.name}</span>
+                    <button on:click={() => cffFile = null} class="text-red-500 hover:text-red-400">Remove</button>
+                </div>
+            {/if}
             {#if cfgFile}
                 <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
                     <span class="text-white">{cfgFile.name}</span>
@@ -132,7 +150,7 @@
             {/if}
         </div>
 
-        {#if cfgFile && datFile}
+        {#if (cfgFile && datFile) || cffFile}
             <div class="mt-6 text-center">
                 <button
                     on:click={analyseFiles}

@@ -58,16 +58,26 @@ pub struct ComtradeInfo {
 }
 
 #[wasm_bindgen]
-pub fn parse_comtrade(cfg_file: &[u8], dat_file: &[u8]) -> Result<JsValue, JsValue> {
-    let cfg_reader = BufReader::new(cfg_file);
-    let dat_reader = BufReader::new(dat_file);
-
+pub fn parse_comtrade(
+    cfg_file: Option<Box<[u8]>>,
+    dat_file: Option<Box<[u8]>>,
+    cff_file: Option<Box<[u8]>>,
+) -> Result<JsValue, JsValue> {
     let result = panic::catch_unwind(move || {
-        ComtradeParserBuilder::new()
-            .cfg_file(cfg_reader)
-            .dat_file(dat_reader)
-            .build()
-            .parse()
+        let mut builder = ComtradeParserBuilder::new();
+
+        if cff_file.is_some() {
+            let cff_reader = BufReader::new(cff_file.unwrap().as_ref());
+            builder = builder.cff_file(cff_reader);
+        } else if cfg_file.is_some() && dat_file.is_some() {
+            let cfg_reader = BufReader::new(cfg_file.unwrap().as_ref());
+            let dat_reader = BufReader::new(dat_file.unwrap().as_ref());
+            builder = builder.cfg_file(cfg_reader).dat_file(dat_reader);
+        } else {
+            return Err("Either a CFF file or a CFG and a DAT file must be provided.".into());
+        }
+
+        builder.parse()
     });
 
     match result {
@@ -92,9 +102,16 @@ pub fn parse_comtrade(cfg_file: &[u8], dat_file: &[u8]) -> Result<JsValue, JsVal
             "Error parsing COMTRADE file: {:?}",
             e
         ))),
-        Err(_) => Err(JsValue::from_str(
-            "A panic occurred while parsing the COMTRADE file. This may be due to a malformed file.",
-        )),
+        Err(e) => {
+            let message = if let Some(s) = e.downcast_ref::<&'static str>() {
+                *s
+            } else if let Some(s) = e.downcast_ref::<String>() {
+                s
+            } else {
+                "A panic occurred while parsing the COMTRADE file. This may be due to a malformed file."
+            };
+            Err(JsValue::from_str(message))
+        }
     }
 }
 
