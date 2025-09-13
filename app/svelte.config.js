@@ -18,7 +18,7 @@ const config = {
 			precompress: false
 		}),
 		paths: {
-			base: process.env.NODE_ENV === 'production' ? '/comtrade-inspector' : '',
+			base: process.env.NODE_ENV === 'production' ? '/comtrade-inspector' : ''
 		}
 	}
 };

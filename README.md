@@ -1,5 +1,10 @@
 # comtrade inspector
 
+You need to have [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) installed.
+
+```bash
+cargo install wasm-pack
+```
 
 Build the WASM module
 

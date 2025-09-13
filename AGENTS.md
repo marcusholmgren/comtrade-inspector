@@ -10,6 +10,14 @@ The Svelte application depends on the WASM module built from the Rust code.
 
 From the root of this repository, run the following command to build the WASM module:
 
+You need to have [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) installed.
+
+```bash
+cargo install wasm-pack
+```
+
+Then run the following command to build the WASM module:
+
 ```bash
 cd comtrade_rust
 wasm-pack build --target web
