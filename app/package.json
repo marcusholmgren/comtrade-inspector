@@ -46,6 +46,7 @@
 		"vitest-browser-svelte": "^0.1.0"
 	},
 	"dependencies": {
-		"comtrade_rust": "file:../comtrade_rust/pkg"
+		"comtrade_rust": "file:../comtrade_rust/pkg",
+		"uplot": "^1.6.32"
 	}
 }
