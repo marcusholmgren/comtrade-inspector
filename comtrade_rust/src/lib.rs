@@ -3,7 +3,7 @@
 // This file exists to parse COMTRADE files and return the information to the Svelte frontend.
 // RELEVANT FILES: app/src/routes/info/+page.svelte
 
-use comtrade::{AnalogChannel, ComtradeParserBuilder, DataFormat};
+use comtrade::{StatusChannel, ComtradeParserBuilder, DataFormat};
 use encoding_rs;
 use serde::Serialize;
 use std::{io::BufReader, panic};
@@ -39,20 +39,27 @@ pub struct SerializableAnalogChannel {
     pub phase: String,
     /// The component of the power system circuit being monitored.
     pub circuit_component_being_monitored: String,
+    /// The waveform data for this channel.
+    pub values: Vec<f64>,
 }
 
-impl From<&AnalogChannel> for SerializableAnalogChannel {
-    fn from(channel: &AnalogChannel) -> Self {
+/// Represents a single digital channel from a COMTRADE file, formatted for serialization.
+#[derive(Serialize, Clone)]
+pub struct SerializableDigitalChannel {
+    /// The channel index number.
+    pub index: u32,
+    /// The name of the digital channel.
+    pub name: String,
+    /// The initial value of the channel.
+    pub initial_value: u8,
+}
+
+impl From<&StatusChannel> for SerializableDigitalChannel {
+    fn from(channel: &StatusChannel) -> Self {
         Self {
             index: channel.index,
             name: channel.name.clone(),
-            units: channel.units.clone(),
-            min_value: channel.min_value,
-            max_value: channel.max_value,
-            multiplier: channel.multiplier,
-            offset_adder: channel.offset_adder,
-            phase: channel.phase.clone(),
-            circuit_component_being_monitored: channel.circuit_component_being_monitored.clone(),
+            initial_value: channel.normal_status_value,
         }
     }
 }
@@ -74,6 +81,10 @@ pub struct ComtradeInfo {
     pub frequency: f64,
     /// A list of the analog channels present in the file.
     pub analog_channels: Vec<SerializableAnalogChannel>,
+    /// A list of the digital channels present in the file.
+    pub digital_channels: Vec<SerializableDigitalChannel>,
+    /// The timestamps for each data point, in Unix seconds.
+    pub timestamps: Vec<f64>,
 }
 
 /// Parses a COMTRADE file from its constituent parts.
@@ -128,11 +139,51 @@ pub fn parse_comtrade(
 
     match result {
         Ok(Ok(comtrade)) => {
+            let trigger_time_seconds = comtrade.trigger_time.and_utc().timestamp();
+
+            let mut timestamps_us = Vec::new();
+            let mut current_time_us = 0.0;
+            let mut last_end_sample = 0;
+
+            for rate_info in &comtrade.sampling_rates {
+                let period_us = 1_000_000.0 / rate_info.rate_hz as f64;
+                let num_samples_in_section = rate_info.end_sample_number - last_end_sample;
+
+                for _ in 0..num_samples_in_section {
+                    timestamps_us.push(current_time_us);
+                    current_time_us += period_us;
+                }
+                last_end_sample = rate_info.end_sample_number;
+            }
+
+            let absolute_timestamps: Vec<f64> = timestamps_us
+                .iter()
+                .map(|&t_us| trigger_time_seconds as f64 + (t_us / 1_000_000.0))
+                .collect();
+
             let analog_channels: Vec<SerializableAnalogChannel> = comtrade
                 .analog_channels
                 .iter()
-                .map(SerializableAnalogChannel::from)
+                .map(|ch| SerializableAnalogChannel {
+                    index: ch.index,
+                    name: ch.name.clone(),
+                    units: ch.units.clone(),
+                    min_value: ch.min_value,
+                    max_value: ch.max_value,
+                    multiplier: ch.multiplier,
+                    offset_adder: ch.offset_adder,
+                    phase: ch.phase.clone(),
+                    circuit_component_being_monitored: ch.circuit_component_being_monitored.clone(),
+                    values: ch.data.clone(),
+                })
                 .collect();
+
+            let digital_channels: Vec<SerializableDigitalChannel> = comtrade
+                .status_channels
+                .iter()
+                .map(SerializableDigitalChannel::from)
+                .collect();
+
             let info = ComtradeInfo {
                 station: comtrade.station_name.clone(),
                 recording_device_id: comtrade.recording_device_id.clone(),
@@ -141,6 +192,8 @@ pub fn parse_comtrade(
                 data_format: data_format_to_str(&comtrade.data_format).to_string(),
                 frequency: comtrade.line_frequency,
                 analog_channels,
+                digital_channels,
+                timestamps: absolute_timestamps,
             };
             serde_wasm_bindgen::to_value(&info).map_err(|e| JsValue::from_str(&e.to_string()))
         }

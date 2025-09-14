@@ -26,6 +26,12 @@
 		cffFileName?: string;
 	}
 
+	interface DigitalChannel {
+		index: number;
+		name: string;
+		initial_value: number;
+	}
+
 	interface ComtradeInfo extends FileInfo {
 		station: string;
 		recording_device_id: string;
@@ -34,6 +40,7 @@
 		data_format: string;
 		frequency: number;
 		analog_channels: AnalogChannel[];
+		digital_channels: DigitalChannel[];
 	}
 
 	let result: ComtradeInfo | null = null;
@@ -159,16 +166,15 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr class="border-b border-[#3b4754]">
-						<td class="p-3 font-medium">1</td>
-						<td class="p-3 text-[#9dabb9]"> Breaker Status </td>
-						<td class="p-3 text-[#9dabb9]">0</td>
-					</tr>
-					<tr>
-						<td class="p-3 font-medium">2</td>
-						<td class="p-3 text-[#9dabb9]"> Trip Signal </td>
-						<td class="p-3 text-[#9dabb9]">0</td>
-					</tr>
+					{#if result}
+						{#each result.digital_channels as channel (channel.index)}
+							<tr class="border-b border-[#3b4754]">
+								<td class="p-3 font-medium">{channel.index}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.name}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.initial_value}</td>
+							</tr>
+						{/each}
+					{/if}
 				</tbody>
 			</table>
 		</div>
