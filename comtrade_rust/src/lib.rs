@@ -39,6 +39,8 @@ pub struct SerializableAnalogChannel {
     pub phase: String,
     /// The component of the power system circuit being monitored.
     pub circuit_component_being_monitored: String,
+    /// The waveform data for this channel.
+    pub values: Vec<f64>,
 }
 
 impl From<&AnalogChannel> for SerializableAnalogChannel {
@@ -53,6 +55,7 @@ impl From<&AnalogChannel> for SerializableAnalogChannel {
             offset_adder: channel.offset_adder,
             phase: channel.phase.clone(),
             circuit_component_being_monitored: channel.circuit_component_being_monitored.clone(),
+            values: channel.data.clone(),
         }
     }
 }
@@ -74,6 +77,8 @@ pub struct ComtradeInfo {
     pub frequency: f64,
     /// A list of the analog channels present in the file.
     pub analog_channels: Vec<SerializableAnalogChannel>,
+    /// The timestamps for each data point.
+    pub timestamps: Vec<f64>,
 }
 
 /// Parses a COMTRADE file from its constituent parts.
@@ -141,6 +146,7 @@ pub fn parse_comtrade(
                 data_format: data_format_to_str(&comtrade.data_format).to_string(),
                 frequency: comtrade.line_frequency,
                 analog_channels,
+                timestamps: comtrade.timestamps.clone(),
             };
             serde_wasm_bindgen::to_value(&info).map_err(|e| JsValue::from_str(&e.to_string()))
         }
