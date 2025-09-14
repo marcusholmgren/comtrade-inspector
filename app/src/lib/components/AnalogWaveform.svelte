@@ -10,28 +10,29 @@
 	import 'uplot/dist/uPlot.min.css';
 
 	export let timestamps: number[];
-	export let values: number[];
-	export let channelName: string;
-	export let strokeColor: string = 'rgb(75, 192, 192)';
+	export let series: { name: string; values: number[]; color: string }[];
+	export let title: string;
 
 	let chartContainer: HTMLDivElement;
 	let plot: uPlot;
 
 	onMount(() => {
-		const data = [timestamps, values];
+		const data = [timestamps, ...series.map((s) => s.values)];
+
+		const uPlotSeries: uPlot.Series[] = [
+			{},
+			...series.map((s) => ({
+				label: s.name,
+				stroke: s.color,
+				width: 2
+			}))
+		];
 
 		const opts: uPlot.Options = {
-			title: channelName,
+			title: title,
 			width: 800,
 			height: 400,
-			series: [
-				{},
-				{
-					label: channelName,
-					stroke: strokeColor,
-					width: 2
-				}
-			],
+			series: uPlotSeries,
 			axes: [
 				{
 					label: 'Time (s)'

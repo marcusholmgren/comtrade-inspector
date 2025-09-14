@@ -10,9 +10,11 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import AnalogWaveform from '$lib/components/AnalogWaveform.svelte';
+	import Switch from '$lib/components/Switch.svelte';
 
 	let result = $state<any>(null);
 	let selectedChannels = $state<number[]>([]);
+	let combineChannels = $state(false);
 
 	const colors = [
 		'#e6194b',
@@ -37,9 +39,21 @@
 		'#808080'
 	];
 
+	const combinedSeries = $derived(
+		selectedChannels.map((channelIndex) => {
+			const channel = result.analog_channels.find((c) => c.index === channelIndex);
+			return {
+				name: channel.name,
+				values: channel.values,
+				color: colors[channelIndex % colors.length]
+			};
+		})
+	);
+
 	onMount(() => {
 		const unsubscribe = analysisResult.subscribe((value) => {
 			if (value) {
+				console.log(value);
 				result = value;
 			} else {
 				goto(`${base}/`);
@@ -74,32 +88,52 @@
 						<input
 							type="checkbox"
 							checked={selectedChannels.includes(channel.index)}
-							on:change={() => toggleChannel(channel.index)}
+							onchange={() => toggleChannel(channel.index)}
 						/>
 						<span>{channel.name}</span>
 					</label>
 				{/each}
 			</div>
+			<div class="mt-4">
+				<Switch bind:checked={combineChannels} label="Combine channels in one plot" />
+			</div>
 		</div>
 
 		<div class="space-y-8">
-			{#each selectedChannels as channelIndex}
-				{@const channel = result.analog_channels.find((c) => c.index === channelIndex)}
-				{#if channel}
-					<div>
-						<h3 class="text-lg font-semibold">{channel.name}</h3>
-						<p class="text-sm text-gray-400">{channel.circuit_component_being_monitored} - {channel.units}</p>
-						<div class="mt-4 rounded-lg bg-gray-800 p-4">
-							<AnalogWaveform
-								timestamps={result.timestamps}
-								values={channel.values}
-								channelName={channel.name}
-								strokeColor={colors[channelIndex % colors.length]}
-							/>
+			{#if combineChannels && selectedChannels.length > 0}
+				<div class="mt-4 rounded-lg bg-gray-800 p-4">
+					<AnalogWaveform
+						timestamps={result.timestamps}
+						series={combinedSeries}
+						title="Combined Analog Waveforms"
+					/>
+				</div>
+			{:else}
+				{#each selectedChannels as channelIndex}
+					{@const channel = result.analog_channels.find((c) => c.index === channelIndex)}
+					{#if channel}
+						<div>
+							<h3 class="text-lg font-semibold">{channel.name}</h3>
+							<p class="text-sm text-gray-400">
+								{channel.circuit_component_being_monitored} - {channel.units}
+							</p>
+							<div class="mt-4 rounded-lg bg-gray-800 p-4">
+								<AnalogWaveform
+									timestamps={result.timestamps}
+									series={[
+										{
+											name: channel.name,
+											values: channel.values,
+											color: colors[channelIndex % colors.length]
+										}
+									]}
+									title={channel.name}
+								/>
+							</div>
 						</div>
-					</div>
-				{/if}
-			{/each}
+					{/if}
+				{/each}
+			{/if}
 		</div>
 	{:else}
 		<p>Loading analysis results...</p>

@@ -3,7 +3,7 @@
 // This file exists to parse COMTRADE files and return the information to the Svelte frontend.
 // RELEVANT FILES: app/src/routes/info/+page.svelte
 
-use comtrade::{AnalogChannel, ComtradeParserBuilder, DataFormat};
+use comtrade::{ComtradeParserBuilder, DataFormat};
 use encoding_rs;
 use serde::Serialize;
 use std::{io::BufReader, panic};
@@ -43,23 +43,6 @@ pub struct SerializableAnalogChannel {
     pub values: Vec<f64>,
 }
 
-impl From<&AnalogChannel> for SerializableAnalogChannel {
-    fn from(channel: &AnalogChannel) -> Self {
-        Self {
-            index: channel.index,
-            name: channel.name.clone(),
-            units: channel.units.clone(),
-            min_value: channel.min_value,
-            max_value: channel.max_value,
-            multiplier: channel.multiplier,
-            offset_adder: channel.offset_adder,
-            phase: channel.phase.clone(),
-            circuit_component_being_monitored: channel.circuit_component_being_monitored.clone(),
-            values: channel.data.clone(),
-        }
-    }
-}
-
 /// Contains the parsed information from a COMTRADE file.
 #[derive(Serialize)]
 pub struct ComtradeInfo {
@@ -77,7 +60,7 @@ pub struct ComtradeInfo {
     pub frequency: f64,
     /// A list of the analog channels present in the file.
     pub analog_channels: Vec<SerializableAnalogChannel>,
-    /// The timestamps for each data point.
+    /// The timestamps for each data point, in Unix seconds.
     pub timestamps: Vec<f64>,
 }
 
@@ -133,11 +116,45 @@ pub fn parse_comtrade(
 
     match result {
         Ok(Ok(comtrade)) => {
+            let trigger_time_seconds = comtrade.trigger_time.and_utc().timestamp();
+
+            let mut timestamps_us = Vec::new();
+            let mut current_time_us = 0.0;
+            let mut last_end_sample = 0;
+
+            for rate_info in &comtrade.sampling_rates {
+                let period_us = 1_000_000.0 / rate_info.rate_hz as f64;
+                let num_samples_in_section = rate_info.end_sample_number - last_end_sample;
+
+                for _ in 0..num_samples_in_section {
+                    timestamps_us.push(current_time_us);
+                    current_time_us += period_us;
+                }
+                last_end_sample = rate_info.end_sample_number;
+            }
+
+            let absolute_timestamps: Vec<f64> = timestamps_us
+                .iter()
+                .map(|&t_us| trigger_time_seconds as f64 + (t_us / 1_000_000.0))
+                .collect();
+
             let analog_channels: Vec<SerializableAnalogChannel> = comtrade
                 .analog_channels
                 .iter()
-                .map(SerializableAnalogChannel::from)
+                .map(|ch| SerializableAnalogChannel {
+                    index: ch.index,
+                    name: ch.name.clone(),
+                    units: ch.units.clone(),
+                    min_value: ch.min_value,
+                    max_value: ch.max_value,
+                    multiplier: ch.multiplier,
+                    offset_adder: ch.offset_adder,
+                    phase: ch.phase.clone(),
+                    circuit_component_being_monitored: ch.circuit_component_being_monitored.clone(),
+                    values: ch.data.clone(),
+                })
                 .collect();
+
             let info = ComtradeInfo {
                 station: comtrade.station_name.clone(),
                 recording_device_id: comtrade.recording_device_id.clone(),
@@ -146,7 +163,7 @@ pub fn parse_comtrade(
                 data_format: data_format_to_str(&comtrade.data_format).to_string(),
                 frequency: comtrade.line_frequency,
                 analog_channels,
-                timestamps: comtrade.timestamps.clone(),
+                timestamps: absolute_timestamps,
             };
             serde_wasm_bindgen::to_value(&info).map_err(|e| JsValue::from_str(&e.to_string()))
         }

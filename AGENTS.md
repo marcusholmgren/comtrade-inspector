@@ -27,7 +27,7 @@ From the root of this repository, run the following command to build the Svelte 
 
 ```bash
 cd app
-npm run dev -- --open
+npm run build
 ```
 
 
