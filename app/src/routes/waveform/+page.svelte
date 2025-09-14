@@ -109,7 +109,7 @@
 					/>
 				</div>
 			{:else}
-				{#each selectedChannels as channelIndex}
+				{#each selectedChannels as channelIndex (channelIndex)}
 					{@const channel = result.analog_channels.find((c) => c.index === channelIndex)}
 					{#if channel}
 						<div>

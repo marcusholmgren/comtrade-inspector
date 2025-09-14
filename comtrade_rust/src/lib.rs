@@ -3,7 +3,7 @@
 // This file exists to parse COMTRADE files and return the information to the Svelte frontend.
 // RELEVANT FILES: app/src/routes/info/+page.svelte
 
-use comtrade::{ComtradeParserBuilder, DataFormat};
+use comtrade::{StatusChannel, ComtradeParserBuilder, DataFormat};
 use encoding_rs;
 use serde::Serialize;
 use std::{io::BufReader, panic};
@@ -43,6 +43,27 @@ pub struct SerializableAnalogChannel {
     pub values: Vec<f64>,
 }
 
+/// Represents a single digital channel from a COMTRADE file, formatted for serialization.
+#[derive(Serialize, Clone)]
+pub struct SerializableDigitalChannel {
+    /// The channel index number.
+    pub index: u32,
+    /// The name of the digital channel.
+    pub name: String,
+    /// The initial value of the channel.
+    pub initial_value: u8,
+}
+
+impl From<&StatusChannel> for SerializableDigitalChannel {
+    fn from(channel: &StatusChannel) -> Self {
+        Self {
+            index: channel.index,
+            name: channel.name.clone(),
+            initial_value: channel.normal_status_value,
+        }
+    }
+}
+
 /// Contains the parsed information from a COMTRADE file.
 #[derive(Serialize)]
 pub struct ComtradeInfo {
@@ -60,6 +81,8 @@ pub struct ComtradeInfo {
     pub frequency: f64,
     /// A list of the analog channels present in the file.
     pub analog_channels: Vec<SerializableAnalogChannel>,
+    /// A list of the digital channels present in the file.
+    pub digital_channels: Vec<SerializableDigitalChannel>,
     /// The timestamps for each data point, in Unix seconds.
     pub timestamps: Vec<f64>,
 }
@@ -155,6 +178,12 @@ pub fn parse_comtrade(
                 })
                 .collect();
 
+            let digital_channels: Vec<SerializableDigitalChannel> = comtrade
+                .status_channels
+                .iter()
+                .map(SerializableDigitalChannel::from)
+                .collect();
+
             let info = ComtradeInfo {
                 station: comtrade.station_name.clone(),
                 recording_device_id: comtrade.recording_device_id.clone(),
@@ -163,6 +192,7 @@ pub fn parse_comtrade(
                 data_format: data_format_to_str(&comtrade.data_format).to_string(),
                 frequency: comtrade.line_frequency,
                 analog_channels,
+                digital_channels,
                 timestamps: absolute_timestamps,
             };
             serde_wasm_bindgen::to_value(&info).map_err(|e| JsValue::from_str(&e.to_string()))
