@@ -18,7 +18,7 @@ const config = {
 			precompress: false
 		}),
 		paths: {
-			base: process.env.BASE_URL || ''
+			base: '/comtrade-inspector'
 		}
 	}
 };
