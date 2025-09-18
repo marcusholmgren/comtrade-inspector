@@ -7,6 +7,12 @@
 	export const ssr = false;
 
 	let { children } = $props();
+
+	let isSidebarOpen = $state(false);
+
+	function toggleSidebar() {
+		isSidebarOpen = !isSidebarOpen;
+	}
 </script>
 
 <svelte:head>
@@ -19,8 +25,15 @@
 </svelte:head>
 
 <div class="flex min-h-screen">
-	<Sidebar />
+	<Sidebar {isSidebarOpen} {toggleSidebar} />
 	<main class="flex-1 p-8">
+		<button
+			class="fixed top-4 left-4 z-20 md:hidden"
+			onclick={toggleSidebar}
+			aria-label="Toggle sidebar"
+		>
+			<span class="material-symbols-outlined text-3xl">menu</span>
+		</button>
 		{@render children?.()}
 	</main>
 </div>

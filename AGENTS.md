@@ -44,7 +44,7 @@ npm run build
 
 # TECH STACK
 - Rust
-- Svelte
+- Svelte 5
 - TailwindCSS
 
 # VERSION CONTROL

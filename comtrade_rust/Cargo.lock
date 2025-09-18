@@ -70,13 +70,14 @@ dependencies = [
 [[package]]
 name = "comtrade"
 version = "0.2.2"
-source = "git+https://github.com/drewsilcock/comtrade.git?rev=ad281b6#ad281b60a4bfb958720ea66b9c3fbb0348603cf8"
+source = "git+https://github.com/WiresmithTech/comtrade.git?rev=d042a4c5f02d041ed07968d9d66534fbaf14be6b#d042a4c5f02d041ed07968d9d66534fbaf14be6b"
 dependencies = [
  "byteorder",
  "chrono",
  "derive_builder",
  "lazy_static",
  "regex",
+ "thiserror",
 ]
 
 [[package]]
@@ -389,6 +390,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "thiserror"
+version = "2.0.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3467d614147380f2e4e374161426ff399c91084acd2363eaf549172b3d5e60c0"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "2.0.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c5e1be1c48b9172ee610da68fd9cd2770e7a4056cb3fc98710ee6906f0c7960"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
 ]
 
 [[package]]

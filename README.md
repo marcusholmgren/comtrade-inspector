@@ -25,4 +25,4 @@ npm run dev -- --open
 
 ## Reference
 
-Rust [Comtrade library](https://github.com/drewsilcock/comtrade)
+Rust [Comtrade library](https://github.com/drewsilcock/comtrade) testing fork [WiresmithTech](https://github.com/WiresmithTech/comtrade) that contains some parsing fixes.

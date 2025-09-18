@@ -7,7 +7,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import init, { parse_comtrade, init_panic_hook } from 'comtrade_rust';
 	import Upload from '$lib/components/Upload.svelte';
 	import { analysisResult } from '$lib/store';
@@ -17,7 +17,7 @@
 
 	onMount(async () => {
 		try {
-			await init(`${base}/comtrade_rust_bg.wasm`);
+			await init(asset('/comtrade_rust_bg.wasm'));
 			init_panic_hook();
 			initialized = true;
 		} catch (err) {
@@ -41,7 +41,7 @@
 			cffFileName: event.detail.cffFileName
 		};
 		analysisResult.set(result);
-		goto(`${base}/info`);
+		goto(resolve('/info'));
 	}
 </script>
 
