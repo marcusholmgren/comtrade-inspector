@@ -6,8 +6,8 @@
 -->
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import uPlot from 'uplot';
 	import 'uplot/dist/uPlot.min.css';
+	import type uPlot from 'uplot';
 
 	let { timestamps, series, title } = $props<{
 		timestamps: number[];
@@ -17,12 +17,13 @@
 
 	let chartContainer: HTMLDivElement;
 	let plot: uPlot | null = null;
+	let uPlotClass: typeof uPlot | null = $state(null);
 
 	$effect(() => {
 		if (plot) {
 			plot.destroy();
 		}
-		if (chartContainer) {
+		if (chartContainer && uPlotClass) {
 			const data = [timestamps, ...series.map((s) => s.values)];
 			const uPlotSeries: uPlot.Series[] = [
 				{},
@@ -42,11 +43,14 @@
 					{ label: 'Value' }
 				]
 			};
-			plot = new uPlot(opts, data, chartContainer);
+			plot = new uPlotClass(opts, data as any, chartContainer);
 		}
 	});
 
-	onMount(() => {
+	onMount(async () => {
+		const module = await import('uplot');
+		uPlotClass = module.default;
+
 		const resizeObserver = new ResizeObserver(() => {
 			if (plot) {
 				plot.setSize({
