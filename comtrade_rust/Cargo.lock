@@ -70,7 +70,7 @@ dependencies = [
 [[package]]
 name = "comtrade"
 version = "0.2.2"
-source = "git+https://github.com/marcusholmgren/comtrade.git?rev=e51d394453e5ddb1c7abce8aeea3473c2d455c7d#e51d394453e5ddb1c7abce8aeea3473c2d455c7d"
+source = "git+https://github.com/marcusholmgren/comtrade.git?rev=15baa63e7b2d9d761cffce14002058412ff9ba45#15baa63e7b2d9d761cffce14002058412ff9ba45"
 dependencies = [
  "byteorder",
  "chrono",
@@ -88,6 +88,7 @@ dependencies = [
  "console_error_panic_hook",
  "encoding_rs",
  "js-sys",
+ "regex",
  "serde",
  "serde-wasm-bindgen",
  "thiserror 1.0.69",

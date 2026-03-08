@@ -5,6 +5,7 @@
 
 use comtrade::{StatusChannel, ComtradeParserBuilder, DataFormat};
 use encoding_rs;
+use regex::bytes::Regex as BytesRegex;
 use serde::Serialize;
 use std::{io::BufReader, panic};
 use wasm_bindgen::prelude::*;
@@ -131,21 +132,78 @@ pub fn parse_comtrade(
     cff_file: Option<Box<[u8]>>,
     encoding_label: Option<String>,
 ) -> Result<JsValue, WasmComtradeError> {
+    let encoding = encoding_label
+        .as_deref()
+        .and_then(|label| encoding_rs::Encoding::for_label(label.as_bytes()))
+        .unwrap_or(encoding_rs::UTF_8);
+
     let result = panic::catch_unwind(move || {
         if let Some(cff_data) = cff_file {
-            // For CFF files, we assume UTF-8 as we can't easily decode only the text part
-            // without a more sophisticated parsing approach.
-            let cff_reader = BufReader::new(cff_data.as_ref());
-            ComtradeParserBuilder::new()
-                .cff_file(cff_reader)
-                .build()
-                .parse()
-        } else if let (Some(cfg_data), Some(dat_data)) = (cfg_file, dat_file) {
-            let encoding = encoding_label
-                .as_deref()
-                .and_then(|label| encoding_rs::Encoding::for_label(label.as_bytes()))
-                .unwrap_or(encoding_rs::UTF_8);
+            // CFF files can contain binary data (DAT part), so we split it into components first.
+            // Some parsers fail if they try to read the entire file as UTF-8.
+            let re = BytesRegex::new(r"(?im-u)^---\s*file type:\s*(?P<file_type>[a-z]+).*?---").unwrap();
+            
+            let mut cfg_raw = None;
+            let mut dat_raw = None;
+            let mut hdr_raw = None;
+            let mut inf_raw = None;
 
+            let matches: Vec<_> = re.find_iter(&cff_data).collect();
+            for i in 0..matches.len() {
+                let m = matches[i];
+                let header = &cff_data[m.start()..m.end()];
+                let caps = re.captures(header).unwrap();
+                let file_type = std::str::from_utf8(&caps["file_type"]).unwrap().to_lowercase();
+                
+                let next_start = if i + 1 < matches.len() {
+                    matches[i+1].start()
+                } else {
+                    cff_data.len()
+                };
+                
+                let content = &cff_data[m.end()..next_start];
+                
+                match file_type.as_str() {
+                    "cfg" => cfg_raw = Some(content),
+                    "dat" => dat_raw = Some(content),
+                    "hdr" => hdr_raw = Some(content),
+                    "inf" => inf_raw = Some(content),
+                    _ => {}
+                }
+            }
+
+            let decoded_cfg = cfg_raw.map(|b| {
+                let s = encoding.decode(b).0;
+                let mut lines: Vec<_> = s.lines()
+                    .filter(|l| !l.trim().is_empty())
+                    .collect();
+                lines.push(""); // Add trailing blank line
+                lines.join("\r\n")
+            });
+            let decoded_hdr = hdr_raw.map(|b| encoding.decode(b).0);
+            let decoded_inf = inf_raw.map(|b| encoding.decode(b).0);
+
+            if let Some(cfg) = &decoded_cfg {
+                let mut builder = ComtradeParserBuilder::new();
+                builder = builder.cfg_file(BufReader::new(cfg.as_bytes()));
+                
+                if let Some(dat_bytes) = dat_raw {
+                    builder = builder.dat_file(BufReader::new(dat_bytes));
+                }
+                
+                if let Some(hdr) = &decoded_hdr {
+                    builder = builder.hdr_file(BufReader::new(hdr.as_bytes()));
+                }
+                
+                if let Some(inf) = &decoded_inf {
+                    builder = builder.inf_file(BufReader::new(inf.as_bytes()));
+                }
+                
+                builder.build().parse()
+            } else {
+                panic!("No CFG section found in CFF file.");
+            }
+        } else if let (Some(cfg_data), Some(dat_data)) = (cfg_file, dat_file) {
             let (decoded_cfg, _, _) = encoding.decode(&cfg_data);
             let cfg_reader = BufReader::new(decoded_cfg.as_bytes());
             let dat_reader = BufReader::new(dat_data.as_ref()); // DAT file is binary
@@ -242,4 +300,49 @@ pub fn start() {
     let msg = format!("comtrade_rust v{} ({})", version, GIT_HASH);
     let js_msg = JsValue::from_str(&msg);
     web_sys::console::info_1(&js_msg);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split_cff() {
+        let cff_data = b"--- file type: CFG ---\nCFG CONTENT\n--- file type: DAT ---\nDAT CONTENT\n--- file type: INF ---\nINF CONTENT\n--- file type: HDR ---\nHDR CONTENT";
+        let re = BytesRegex::new(r"(?im-u)^---\s*file type:\s*(?P<file_type>[a-z]+).*?---").unwrap();
+        
+        let mut cfg_raw = None;
+        let mut dat_raw = None;
+        let mut hdr_raw = None;
+        let mut inf_raw = None;
+
+        let matches: Vec<_> = re.find_iter(cff_data).collect();
+        for i in 0..matches.len() {
+            let m = matches[i];
+            let header = &cff_data[m.start()..m.end()];
+            let caps = re.captures(header).unwrap();
+            let file_type = std::str::from_utf8(&caps["file_type"]).unwrap().to_lowercase();
+            
+            let next_start = if i + 1 < matches.len() {
+                matches[i+1].start()
+            } else {
+                cff_data.len()
+            };
+            
+            let content = &cff_data[m.end()..next_start];
+            
+            match file_type.as_str() {
+                "cfg" => cfg_raw = Some(content),
+                "dat" => dat_raw = Some(content),
+                "hdr" => hdr_raw = Some(content),
+                "inf" => inf_raw = Some(content),
+                _ => {}
+            }
+        }
+
+        assert_eq!(std::str::from_utf8(cfg_raw.unwrap()).unwrap().trim(), "CFG CONTENT");
+        assert_eq!(std::str::from_utf8(dat_raw.unwrap()).unwrap().trim(), "DAT CONTENT");
+        assert_eq!(std::str::from_utf8(inf_raw.unwrap()).unwrap().trim(), "INF CONTENT");
+        assert_eq!(std::str::from_utf8(hdr_raw.unwrap()).unwrap().trim(), "HDR CONTENT");
+    }
 }

@@ -74,7 +74,7 @@
 
 			if (cffFile) {
 				const cffData = new Uint8Array(await cffFile.arrayBuffer());
-				result = parse_comtrade(null, null, cffData, null);
+				result = parse_comtrade(null, null, cffData, selectedEncoding);
 				fileInfo = { cffFileName: cffFile.name };
 			} else if (cfgFile && datFile) {
 				const cfgData = new Uint8Array(await cfgFile.arrayBuffer());
@@ -164,10 +164,10 @@
 			{/if}
 		</div>
 
-		{#if cfgFile && datFile}
+		{#if (cfgFile && datFile) || cffFile}
 			<div class="mt-4">
 				<label for="encoding-select" class="block text-sm font-medium text-gray-300"
-					>CFG File Encoding:</label
+					>{cffFile ? 'CFF' : 'CFG'} File Encoding:</label
 				>
 				<select
 					id="encoding-select"

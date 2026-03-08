@@ -35,7 +35,7 @@
 			];
 			const opts: uPlot.Options = {
 				title: title,
-				width: chartContainer.clientWidth,
+				width: chartContainer ? chartContainer.clientWidth : 0,
 				height: 400,
 				series: uPlotSeries,
 				axes: [{ label: 'Time (s)' }, { label: 'Value' }]
@@ -49,7 +49,7 @@
 		uPlotClass = module.default;
 
 		const resizeObserver = new ResizeObserver(() => {
-			if (plot) {
+			if (plot && chartContainer) {
 				plot.setSize({
 					width: chartContainer.clientWidth,
 					height: 400
