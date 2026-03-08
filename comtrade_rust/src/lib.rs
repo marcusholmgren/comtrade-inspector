@@ -9,6 +9,28 @@ use serde::Serialize;
 use std::{io::BufReader, panic};
 use wasm_bindgen::prelude::*;
 
+pub const GIT_HASH: &str = env!("GIT_HASH");
+
+#[derive(Debug, thiserror::Error)]
+pub enum WasmComtradeError {
+    #[error("Parse error: {0}")]
+    ParseError(String),
+    #[error("Invalid file combination: {0}")]
+    InvalidFileCombination(String),
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
+    #[error("Internal panic: {0}")]
+    PanicError(String),
+}
+
+impl From<WasmComtradeError> for JsValue {
+    fn from(wasm: WasmComtradeError) -> Self {
+        let err = js_sys::Error::new(&wasm.to_string());
+        err.set_name("WasmComtradeError");
+        err.into()
+    }
+}
+
 fn data_format_to_str(format: &DataFormat) -> &'static str {
     match format {
         DataFormat::Ascii => "ASCII",
@@ -108,7 +130,7 @@ pub fn parse_comtrade(
     dat_file: Option<Box<[u8]>>,
     cff_file: Option<Box<[u8]>>,
     encoding_label: Option<String>,
-) -> Result<JsValue, JsValue> {
+) -> Result<JsValue, WasmComtradeError> {
     let result = panic::catch_unwind(move || {
         if let Some(cff_data) = cff_file {
             // For CFF files, we assume UTF-8 as we can't easily decode only the text part
@@ -195,12 +217,9 @@ pub fn parse_comtrade(
                 digital_channels,
                 timestamps: absolute_timestamps,
             };
-            serde_wasm_bindgen::to_value(&info).map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_wasm_bindgen::to_value(&info).map_err(|e| WasmComtradeError::SerializationError(e.to_string()))
         }
-        Ok(Err(e)) => Err(JsValue::from_str(&format!(
-            "Error parsing COMTRADE file: {:?}",
-            e
-        ))),
+        Ok(Err(e)) => Err(WasmComtradeError::ParseError(format!("{:?}", e))),
         Err(e) => {
             let message = if let Some(s) = e.downcast_ref::<&'static str>() {
                 *s
@@ -209,14 +228,18 @@ pub fn parse_comtrade(
             } else {
                 "A panic occurred while parsing the COMTRADE file. This may be due to a malformed file."
             };
-            Err(JsValue::from_str(message))
+            Err(WasmComtradeError::PanicError(message.to_string()))
         }
     }
 }
 
-/// Sets up a panic hook to log panic messages to the browser's developer console.
-/// This should be called once when the Wasm module is initialized.
-#[wasm_bindgen]
-pub fn init_panic_hook() {
+/// Sets up a panic hook and logs the build info on WASM load
+#[wasm_bindgen(start)]
+pub fn start() {
     console_error_panic_hook::set_once();
+
+    let version = env!("CARGO_PKG_VERSION");
+    let msg = format!("comtrade_rust v{} ({})", version, GIT_HASH);
+    let js_msg = JsValue::from_str(&msg);
+    web_sys::console::info_1(&js_msg);
 }

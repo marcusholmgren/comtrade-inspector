@@ -8,7 +8,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { asset, resolve } from '$app/paths';
-	import init, { parse_comtrade, init_panic_hook } from 'comtrade_rust';
+	import init, { parse_comtrade } from 'comtrade_rust';
 	import Upload from '$lib/components/Upload.svelte';
 	import { analysisResult } from '$lib/store';
 
@@ -18,7 +18,6 @@
 	onMount(async () => {
 		try {
 			await init({ module_or_path: asset('/comtrade_rust_bg.wasm') });
-			init_panic_hook();
 			initialized = true;
 		} catch (err) {
 			console.error('Failed to initialize WASM:', err);
