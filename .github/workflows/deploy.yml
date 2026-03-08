@@ -20,13 +20,17 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install wasm-pack
-        run: cargo install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -51,7 +55,7 @@ jobs:
         working-directory: ./comtrade_rust
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         working-directory: ./app
 
       - name: Build application for GitHub Pages
@@ -63,7 +67,7 @@ jobs:
         working-directory: ./app
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

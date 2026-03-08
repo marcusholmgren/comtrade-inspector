@@ -57,9 +57,9 @@ pub struct SerializableDigitalChannel {
 impl From<&StatusChannel> for SerializableDigitalChannel {
     fn from(channel: &StatusChannel) -> Self {
         Self {
-            index: channel.index,
-            name: channel.name.clone(),
-            initial_value: channel.normal_status_value,
+            index: channel.config.index.get() as u32,
+            name: channel.config.name.clone(),
+            initial_value: channel.config.normal_status_value,
         }
     }
 }
@@ -165,15 +165,15 @@ pub fn parse_comtrade(
                 .analog_channels
                 .iter()
                 .map(|ch| SerializableAnalogChannel {
-                    index: ch.index,
-                    name: ch.name.clone(),
-                    units: ch.units.clone(),
-                    min_value: ch.min_value,
-                    max_value: ch.max_value,
-                    multiplier: ch.multiplier,
-                    offset_adder: ch.offset_adder,
-                    phase: ch.phase.clone(),
-                    circuit_component_being_monitored: ch.circuit_component_being_monitored.clone(),
+                    index: ch.config.index.get() as u32,
+                    name: ch.config.name.clone(),
+                    units: ch.config.units.clone(),
+                    min_value: ch.config.min_value,
+                    max_value: ch.config.max_value,
+                    multiplier: ch.config.multiplier,
+                    offset_adder: ch.config.offset_adder,
+                    phase: ch.config.phase.clone(),
+                    circuit_component_being_monitored: ch.config.circuit_component_being_monitored.clone(),
                     values: ch.data.clone(),
                 })
                 .collect();

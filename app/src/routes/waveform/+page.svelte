@@ -51,8 +51,7 @@
 	);
 
 	const shouldGroup = $derived(
-		result &&
-			(result.analog_channels?.length ?? 0) + (result.digital_channels?.length ?? 0) > 5
+		result && (result.analog_channels?.length ?? 0) + (result.digital_channels?.length ?? 0) > 5
 	);
 
 	const groupedChannels = $derived.by(() => {
@@ -140,7 +139,7 @@
 							/>
 							<h4 class="text-lg font-bold">{unit}</h4>
 						</div>
-						<div class="ml-4 mt-2 grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
+						<div class="mt-2 ml-4 grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
 							{#each channels as channel (channel.index)}
 								<label class="flex items-center space-x-2">
 									<input

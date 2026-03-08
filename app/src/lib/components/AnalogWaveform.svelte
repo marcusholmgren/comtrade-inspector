@@ -38,10 +38,7 @@
 				width: chartContainer.clientWidth,
 				height: 400,
 				series: uPlotSeries,
-				axes: [
-					{ label: 'Time (s)' },
-					{ label: 'Value' }
-				]
+				axes: [{ label: 'Time (s)' }, { label: 'Value' }]
 			};
 			plot = new uPlotClass(opts, data as any, chartContainer);
 		}

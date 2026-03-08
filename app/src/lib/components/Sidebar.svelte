@@ -16,7 +16,7 @@
 </script>
 
 <aside
-	class="fixed z-10 h-full w-64 flex flex-col justify-between bg-[#181C21] p-6 md:static md:flex md:h-auto print:hidden"
+	class="fixed z-10 flex h-full w-64 flex-col justify-between bg-[#181C21] p-6 md:static md:flex md:h-auto print:hidden"
 	class:hidden={!isSidebarOpen}
 >
 	<div>

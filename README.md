@@ -26,3 +26,4 @@ npm run dev -- --open
 ## Reference
 
 Rust [Comtrade library](https://github.com/drewsilcock/comtrade) testing fork [WiresmithTech](https://github.com/WiresmithTech/comtrade) that contains some parsing fixes.
+I have forked Drew's library and incorporated the fixes from WiresmithTech, and added some additional parsing fixes of my own. The source code is available on [GitHub](https://github.com/marcusholmgren/comtrade).

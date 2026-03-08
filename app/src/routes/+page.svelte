@@ -17,7 +17,7 @@
 
 	onMount(async () => {
 		try {
-			await init(asset('/comtrade_rust_bg.wasm'));
+			await init({ module_or_path: asset('/comtrade_rust_bg.wasm') });
 			init_panic_hook();
 			initialized = true;
 		} catch (err) {

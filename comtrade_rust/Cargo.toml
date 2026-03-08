@@ -11,9 +11,9 @@ repository = "https://github.com/marcus-holmgren/comtrade-rust"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm-bindgen = "0.2"
-comtrade = { git = "https://github.com/WiresmithTech/comtrade.git", rev = "d14a0c366573ad1dbd0567fc7ab00728c12f6f24" }
-serde = { version = "1.0", features = ["derive"] }
-serde-wasm-bindgen = "0.4"
+wasm-bindgen = "0.2.114"
+comtrade = { git = "https://github.com/marcusholmgren/comtrade.git", rev = "e51d394453e5ddb1c7abce8aeea3473c2d455c7d" }
+serde = { version = "1.0.228", features = ["derive"] }
+serde-wasm-bindgen = "0.6.5"
 console_error_panic_hook = "0.1.7"
-encoding_rs = "0.8.33"
+encoding_rs = "0.8.35"
