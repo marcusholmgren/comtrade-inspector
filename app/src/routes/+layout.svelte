@@ -13,6 +13,12 @@
 	function toggleSidebar() {
 		isSidebarOpen = !isSidebarOpen;
 	}
+
+	import { onMount } from 'svelte';
+	onMount(() => {
+		// Log app build info on load
+		console.log(`comtrade-inspector v${__APP_VERSION__} (${__GIT_HASH__})`);
+	});
 </script>
 
 <svelte:head>
