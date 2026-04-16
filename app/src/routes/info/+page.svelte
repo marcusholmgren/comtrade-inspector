@@ -58,6 +58,8 @@
 		return () => unsubscribe();
 	});
 
+	// Date formatter used across the UI.
+	// We wrap formatting in a small helper to gracefully handle invalid or missing dates.
 	const dateFormater = new Intl.DateTimeFormat('en-US', {
 		year: 'numeric',
 		month: '2-digit',
@@ -69,8 +71,39 @@
 		timeZoneName: 'short'
 	});
 
-	const formatDate = (dateString: string) => {
-		return dateFormater.format(new Date(dateString));
+	// Safely format a date-like input.
+	// - Accepts strings (ISO, numeric timestamps, etc.).
+	// - Returns a human readable string or a friendly placeholder when parsing fails.
+	const formatDate = (dateString: string | null | undefined) => {
+		// Show a clean placeholder for empty values.
+		if (!dateString) return '—';
+
+		// Try to construct a Date from the input.
+		const d = new Date(dateString);
+
+		// If the Date is invalid, try to coerce numeric strings (unix ms) and retry.
+		if (Number.isNaN(d.getTime())) {
+			const asNum = Number(dateString);
+			if (!Number.isNaN(asNum)) {
+				const d2 = new Date(asNum);
+				if (!Number.isNaN(d2.getTime())) {
+					try {
+						return dateFormater.format(d2);
+					} catch {
+						return 'Invalid date';
+					}
+				}
+			}
+			// Fallback when parsing fails.
+			return 'Invalid date';
+		}
+
+		// Normal case: valid Date object.
+		try {
+			return dateFormater.format(d);
+		} catch {
+			return 'Invalid date';
+		}
 	};
 </script>
 
