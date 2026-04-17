@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2.114"
-comtrade = { git = "https://github.com/marcusholmgren/comtrade.git", rev = "50e32b49fa26ee338b5ce0196f71c029021cb369" }
+comtrade = { git = "https://github.com/marcusholmgren/comtrade.git", rev = "6d74d89edc85cd3a589d73ada7dc2c6d739ad9ae" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
 console_error_panic_hook = "0.1.7"

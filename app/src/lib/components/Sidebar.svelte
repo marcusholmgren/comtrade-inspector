@@ -60,9 +60,9 @@
 		</nav>
 	</div>
 	<div>
-		<a class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-[#283039]" href="#">
+		<button class="flex w-full items-center gap-3 rounded-md px-3 py-2 hover:bg-[#283039]">
 			<span class="material-symbols-outlined">logout</span>
 			<span>🌳</span>
-		</a>
+		</button>
 	</div>
 </aside>

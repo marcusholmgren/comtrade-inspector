@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { playwright } from '@vitest/browser-playwright';
@@ -8,7 +8,7 @@ import { playwright } from '@vitest/browser-playwright';
 const getGitHash = () => {
 	try {
 		return execSync('git rev-parse --short HEAD').toString().trim();
-	} catch (e) {
+	} catch {
 		return 'unknown';
 	}
 };
@@ -17,7 +17,7 @@ const getVersion = () => {
 	try {
 		const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 		return pkg.version;
-	} catch (e) {
+	} catch {
 		return '0.0.0';
 	}
 };

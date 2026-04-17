@@ -8,11 +8,25 @@
 	import { analysisResult } from '$lib/store';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import AnalogWaveform from '$lib/components/AnalogWaveform.svelte';
 	import Switch from '$lib/components/Switch.svelte';
 
-	let result = $state<any>(null);
+	interface Channel {
+		index: number;
+		name: string;
+		units: string;
+		values: number[];
+		circuit_component_being_monitored: string;
+	}
+
+	interface Result {
+		analog_channels: Channel[];
+		digital_channels: { index: number }[];
+		timestamps: number[];
+	}
+
+	let result = $state<Result | null>(null);
 	let selectedChannels = $state<number[]>([]);
 	let combineChannels = $state(false);
 
@@ -41,7 +55,7 @@
 
 	const combinedSeries = $derived(
 		selectedChannels.map((channelIndex) => {
-			const channel = result.analog_channels.find((c: any) => c.index === channelIndex);
+			const channel = result!.analog_channels.find((c: Channel) => c.index === channelIndex)!;
 			return {
 				name: channel.name,
 				values: channel.values,
@@ -56,7 +70,7 @@
 
 	const groupedChannels = $derived.by(() => {
 		if (!result || !result.analog_channels) return {};
-		const groups: Record<string, any[]> = {};
+		const groups: Record<string, Channel[]> = {};
 		for (const channel of result.analog_channels) {
 			const unit = channel.units ? channel.units.trim() || 'No Unit' : 'No Unit';
 			if (!groups[unit]) {
@@ -71,9 +85,9 @@
 		const unsubscribe = analysisResult.subscribe((value) => {
 			if (value) {
 				console.log(value);
-				result = value;
+				result = value as Result;
 			} else {
-				goto(`${base}/`);
+				goto(resolve('/'));
 			}
 		});
 
@@ -92,7 +106,7 @@
 		const channels = groupedChannels[unit];
 		if (!channels) return;
 
-		const channelIndices = channels.map((c: any) => c.index);
+		const channelIndices = channels.map((c: Channel) => c.index);
 		if (isChecked) {
 			const toAdd = channelIndices.filter((i: number) => !selectedChannels.includes(i));
 			selectedChannels = [...selectedChannels, ...toAdd];
@@ -104,13 +118,15 @@
 	function isGroupSelected(unit: string) {
 		const channels = groupedChannels[unit];
 		if (!channels || channels.length === 0) return false;
-		return channels.every((c: any) => selectedChannels.includes(c.index));
+		return channels.every((c: Channel) => selectedChannels.includes(c.index));
 	}
 
 	function isGroupIndeterminate(unit: string) {
 		const channels = groupedChannels[unit];
 		if (!channels || channels.length === 0) return false;
-		const selectedCount = channels.filter((c: any) => selectedChannels.includes(c.index)).length;
+		const selectedCount = channels.filter((c: Channel) =>
+			selectedChannels.includes(c.index)
+		).length;
 		return selectedCount > 0 && selectedCount < channels.length;
 	}
 </script>
@@ -127,7 +143,7 @@
 			<h3 class="text-xl font-semibold">Select Channels</h3>
 
 			{#if shouldGroup}
-				{#each Object.entries(groupedChannels) as [unit, channels]}
+				{#each Object.entries(groupedChannels) as [unit, channels] (unit)}
 					<div class="mt-6">
 						<div class="flex items-center space-x-2">
 							<input
@@ -184,7 +200,7 @@
 				</div>
 			{:else}
 				{#each selectedChannels as channelIndex (channelIndex)}
-					{@const channel = result.analog_channels.find((c: any) => c.index === channelIndex)}
+					{@const channel = result.analog_channels.find((c: Channel) => c.index === channelIndex)}
 					{#if channel}
 						<div>
 							<h3 class="text-lg font-semibold">{channel.name}</h3>
