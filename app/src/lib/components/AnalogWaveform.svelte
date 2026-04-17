@@ -24,10 +24,13 @@
 			plot.destroy();
 		}
 		if (chartContainer && uPlotClass) {
-			const data = [timestamps, ...series.map((s) => s.values)];
+			const data = [
+				timestamps,
+				...series.map((s: { name: string; values: number[]; color: string }) => s.values)
+			];
 			const uPlotSeries: uPlot.Series[] = [
 				{},
-				...series.map((s) => ({
+				...series.map((s: { name: string; values: number[]; color: string }) => ({
 					label: s.name,
 					stroke: s.color,
 					width: 2
@@ -40,26 +43,32 @@
 				series: uPlotSeries,
 				axes: [{ label: 'Time (s)' }, { label: 'Value' }]
 			};
-			plot = new uPlotClass(opts, data as any, chartContainer);
+			plot = new uPlotClass(opts, data as uPlot.AlignedData, chartContainer);
 		}
 	});
 
-	onMount(async () => {
-		const module = await import('uplot');
-		uPlotClass = module.default;
+	onMount(() => {
+		let resizeObserver: ResizeObserver | null = null;
 
-		const resizeObserver = new ResizeObserver(() => {
-			if (plot && chartContainer) {
-				plot.setSize({
-					width: chartContainer.clientWidth,
-					height: 400
-				});
-			}
-		});
-		resizeObserver.observe(chartContainer);
+		(async () => {
+			const module = await import('uplot');
+			uPlotClass = module.default;
+
+			resizeObserver = new ResizeObserver(() => {
+				if (plot && chartContainer) {
+					plot.setSize({
+						width: chartContainer.clientWidth,
+						height: 400
+					});
+				}
+			});
+			resizeObserver.observe(chartContainer);
+		})();
 
 		return () => {
-			resizeObserver.disconnect();
+			if (resizeObserver) {
+				resizeObserver.disconnect();
+			}
 		};
 	});
 

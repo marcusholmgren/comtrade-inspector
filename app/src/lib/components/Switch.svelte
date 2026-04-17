@@ -18,7 +18,7 @@
 		role="switch"
 		aria-checked={checked}
 		aria-labelledby={uniqueID}
-		on:click={() => (checked = !checked)}
+		onclick={() => (checked = !checked)}
 	>
 	</button>
 </div>

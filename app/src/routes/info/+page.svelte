@@ -45,13 +45,15 @@
 
 	let result: ComtradeInfo | null = null;
 
+	import { resolve } from '$app/paths';
+
 	onMount(() => {
 		const unsubscribe = analysisResult.subscribe((value) => {
 			if (value) {
 				result = value as ComtradeInfo;
 			} else {
 				// If there's no result, redirect back to the upload page.
-				goto('/');
+				goto(resolve('/'));
 			}
 		});
 

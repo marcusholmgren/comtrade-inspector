@@ -113,6 +113,7 @@
 			ondragover={onDragOver}
 			ondragleave={onDragLeave}
 			ondrop={onDrop}
+			role="presentation"
 		>
 			<input
 				type="file"
