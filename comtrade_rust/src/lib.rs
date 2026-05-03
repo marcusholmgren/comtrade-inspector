@@ -3,7 +3,7 @@
 // This file exists to parse COMTRADE files and return the information to the Svelte frontend.
 // RELEVANT FILES: app/src/routes/info/+page.svelte
 
-use comtrade::{StatusChannel, ComtradeParserBuilder, DataFormat};
+use comtrade::{ComtradeParserBuilder, DataFormat, StatusChannel};
 use encoding_rs;
 use regex::bytes::Regex as BytesRegex;
 use serde::Serialize;
@@ -90,27 +90,60 @@ impl From<&StatusChannel> for SerializableDigitalChannel {
 /// Contains the parsed information from a COMTRADE file.
 #[derive(Serialize)]
 pub struct ComtradeInfo {
-    /// The name of the substation or station.
+    /// The name of the substation or station where the recording was made.
     pub station: String,
-    /// The identifier of the recording device.
+
+    /// The identifier of the recording device (recorder ID).
     pub recording_device_id: String,
-    /// The start timestamp of the recording.
+
+    /// Human-readable start timestamp of the recording as produced by the
+    /// underlying COMTRADE library. Typically an ISO-like string.
     pub start_time: String,
-    /// The trigger timestamp of the event.
+
+    /// Human-readable trigger timestamp of the recorded event. Useful for UI
+    /// display and understanding the event relative to the recording.
     pub trigger_time: String,
+
     /// The data format of the DAT file (e.g., "ASCII", "BINARY").
     pub data_format: String,
-    /// The nominal line frequency in Hz.
+
+    /// The nominal line frequency in Hz (e.g., 50.0 or 60.0).
     pub frequency: f64,
-    /// A list of the analog channels present in the file.
+
+    /// A list of the analog channels present in the file, with metadata and
+    /// sample values for each channel.
     pub analog_channels: Vec<SerializableAnalogChannel>,
-    /// A list of the digital channels present in the file.
+
+    /// A list of the digital/status channels present in the file. Each entry
+    /// contains basic metadata (index, name, initial value).
     pub digital_channels: Vec<SerializableDigitalChannel>,
-    /// The timestamps for each data point, in Unix seconds.
+
+    /// Absolute timestamps for every sample expressed as Unix seconds (floating
+    /// point). The length of this vector matches the number of samples in the
+    /// recording and aligns with the per-channel sample arrays.
     pub timestamps: Vec<f64>,
+
+    /// Non-fatal warnings encountered during parsing or analysis. These are
+    /// intended to surface issues the user should be aware of (e.g. unexpected
+    /// line frequency, missing trip signal after a detected sag) but which do
+    /// not prevent returning a usable analysis.
     pub warnings: Vec<String>,
+
+    /// Parsing or validation errors detected that indicate structural problems
+    /// with the input file or clear mismatches (for example: declared total
+    /// channel count not matching parsed channels). Presence of items here
+    /// indicates the file may not be fully trustworthy or correctly formatted.
     pub errors: Vec<String>,
+
+    /// Notes produced by automated analysis routines. These are informational
+    /// observations such as "possible voltage sag detected" or "relay trip
+    /// signal detected" and are intended to help an engineer quickly review
+    /// noteworthy events in the recording.
     pub analysis_notes: Vec<String>,
+
+    /// Numeric trigger timestamp as Unix seconds (floating point). This is
+    /// provided as a machine-friendly numeric value useful for programmatic
+    /// timing calculations and alignment.
     pub trigger_timestamp: f64,
 }
 
@@ -141,31 +174,13 @@ pub fn parse_comtrade(
         .and_then(|label| encoding_rs::Encoding::for_label(label.as_bytes()))
         .unwrap_or(encoding_rs::UTF_8);
 
-    let raw_cfg_text = {
-    if let Some(cff_data) = &cff_file {
-        let re = BytesRegex::new(r"(?im-u)^---\s*file type:\s*cfg.*?---").unwrap();
-        let re_dat = BytesRegex::new(r"(?im-u)^---\s*file type:\s*dat.*?---").unwrap();
-        if let Some(m_cfg) = re.find(&cff_data) {
-            let start = m_cfg.end();
-            let end = re_dat.find(&cff_data).map(|m| m.start()).unwrap_or(cff_data.len());
-            let content = &cff_data[start..end];
-            Some(encoding.decode(content).0.into_owned())
-        } else {
-            None
-        }
-    } else if let Some(cfg_data) = &cfg_file {
-        Some(encoding.decode(cfg_data).0.into_owned())
-    } else {
-        None
-    }
-    };
-
     let result = panic::catch_unwind(move || {
         if let Some(cff_data) = cff_file {
             // CFF files can contain binary data (DAT part), so we split it into components first.
             // Some parsers fail if they try to read the entire file as UTF-8.
-            let re = BytesRegex::new(r"(?im-u)^---\s*file type:\s*(?P<file_type>[a-z]+).*?---").unwrap();
-            
+            let re =
+                BytesRegex::new(r"(?im-u)^---\s*file type:\s*(?P<file_type>[a-z]+).*?---").unwrap();
+
             let mut cfg_raw = None;
             let mut dat_raw = None;
             let mut hdr_raw = None;
@@ -176,16 +191,18 @@ pub fn parse_comtrade(
                 let m = matches[i];
                 let header = &cff_data[m.start()..m.end()];
                 let caps = re.captures(header).unwrap();
-                let file_type = std::str::from_utf8(&caps["file_type"]).unwrap().to_lowercase();
-                
+                let file_type = std::str::from_utf8(&caps["file_type"])
+                    .unwrap()
+                    .to_lowercase();
+
                 let next_start = if i + 1 < matches.len() {
-                    matches[i+1].start()
+                    matches[i + 1].start()
                 } else {
                     cff_data.len()
                 };
-                
+
                 let content = &cff_data[m.end()..next_start];
-                
+
                 match file_type.as_str() {
                     "cfg" => cfg_raw = Some(content),
                     "dat" => dat_raw = Some(content),
@@ -197,9 +214,7 @@ pub fn parse_comtrade(
 
             let decoded_cfg = cfg_raw.map(|b| {
                 let s = encoding.decode(b).0;
-                let mut lines: Vec<_> = s.lines()
-                    .filter(|l| !l.trim().is_empty())
-                    .collect();
+                let mut lines: Vec<_> = s.lines().filter(|l| !l.trim().is_empty()).collect();
                 lines.push(""); // Add trailing blank line
                 lines.join("\r\n")
             });
@@ -209,19 +224,19 @@ pub fn parse_comtrade(
             if let Some(cfg) = &decoded_cfg {
                 let mut builder = ComtradeParserBuilder::new();
                 builder = builder.cfg_file(BufReader::new(cfg.as_bytes()));
-                
+
                 if let Some(dat_bytes) = dat_raw {
                     builder = builder.dat_file(BufReader::new(dat_bytes));
                 }
-                
+
                 if let Some(hdr) = &decoded_hdr {
                     builder = builder.hdr_file(BufReader::new(hdr.as_bytes()));
                 }
-                
+
                 if let Some(inf) = &decoded_inf {
                     builder = builder.inf_file(BufReader::new(inf.as_bytes()));
                 }
-                
+
                 builder.build().parse()
             } else {
                 panic!("No CFG section found in CFF file.");
@@ -236,7 +251,9 @@ pub fn parse_comtrade(
                 .build()
                 .parse()
         } else {
-            panic!("Invalid file combination: either a CFF file, or both a CFG and a DAT file must be provided.");
+            panic!(
+                "Invalid file combination: either a CFF file, or both a CFG and a DAT file must be provided."
+            );
         }
     });
 
@@ -276,7 +293,10 @@ pub fn parse_comtrade(
                     multiplier: ch.config.multiplier,
                     offset_adder: ch.config.offset_adder,
                     phase: ch.config.phase.clone(),
-                    circuit_component_being_monitored: ch.config.circuit_component_being_monitored.clone(),
+                    circuit_component_being_monitored: ch
+                        .config
+                        .circuit_component_being_monitored
+                        .clone(),
                     values: ch.data.clone(),
                 })
                 .collect();
@@ -287,33 +307,30 @@ pub fn parse_comtrade(
                 .map(SerializableDigitalChannel::from)
                 .collect();
 
-
-
             let mut warnings = Vec::new();
             let mut errors = Vec::new();
             let mut analysis_notes = Vec::new();
 
-            if let Some(cfg_text) = &raw_cfg_text {
-                let lines: Vec<&str> = cfg_text.lines().filter(|l| !l.trim().is_empty()).collect();
-                if lines.len() > 1 {
-                    let parts: Vec<&str> = lines[1].split(',').collect();
-                    if parts.len() >= 3 {
-                        let expected_total: Result<u32, _> = parts[0].trim().parse();
-                        let expected_analog: Result<u32, _> = parts[1].trim().trim_end_matches(|c| c == 'A' || c == 'a').parse();
-                        let expected_digital: Result<u32, _> = parts[2].trim().trim_end_matches(|c| c == 'D' || c == 'd').parse();
-
-                        if let (Ok(tot), Ok(ana), Ok(dig)) = (expected_total, expected_analog, expected_digital) {
-                            if tot != ana + dig {
-                                errors.push(format!("The total number of channels ({}) does not match the sum of analog ({}) and digital ({}) channels.", tot, ana, dig));
-                            }
-                        }
-                    }
-                }
+            let actual_total_channels =
+                comtrade.analog_channels.len() + comtrade.status_channels.len();
+            if comtrade.declared_total_channels != actual_total_channels {
+                errors.push(format!(
+                    "The total number of channels ({}) does not match the sum of analog ({}) and digital ({}) channels.",
+                    comtrade.declared_total_channels,
+                    comtrade.analog_channels.len(),
+                    comtrade.status_channels.len()
+                ));
             }
 
             // Check frequency
-            if comtrade.line_frequency != 0.0 && (comtrade.line_frequency - 50.0).abs() > 1.0 && (comtrade.line_frequency - 60.0).abs() > 1.0 {
-                warnings.push(format!("Unexpected frequency detected ({} Hz).", comtrade.line_frequency));
+            if comtrade.line_frequency != 0.0
+                && (comtrade.line_frequency - 50.0).abs() > 1.0
+                && (comtrade.line_frequency - 60.0).abs() > 1.0
+            {
+                warnings.push(format!(
+                    "Unexpected frequency detected ({} Hz).",
+                    comtrade.line_frequency
+                ));
             }
 
             // Detect voltage sag
@@ -342,13 +359,17 @@ pub fn parse_comtrade(
                         if rms < sag_threshold {
                             sag_detected = true;
                             sag_start_time = absolute_timestamps[window_size - 1];
-                            analysis_notes.push(format!("Possible voltage sag detected on channel '{}' at {:.4} seconds.", channel.name, sag_start_time));
+                            analysis_notes.push(format!(
+                                "Possible voltage sag detected on channel '{}' at {:.4} seconds.",
+                                channel.name, sag_start_time
+                            ));
                             break;
                         }
 
                         for i in window_size..channel.values.len() {
                             sum_sq += channel.values[i] * channel.values[i];
-                            sum_sq -= channel.values[i - window_size] * channel.values[i - window_size];
+                            sum_sq -=
+                                channel.values[i - window_size] * channel.values[i - window_size];
                             if sum_sq < 0.0 {
                                 sum_sq = 0.0;
                             }
@@ -369,16 +390,23 @@ pub fn parse_comtrade(
 
             if sag_detected {
                 let mut trip_found = false;
-                for digital_channel in comtrade.status_channels.iter() {
-                    let name = digital_channel.config.name.to_lowercase();
+                for (digital_index, digital_channel) in digital_channels.iter().enumerate() {
+                    let name = digital_channel.name.to_lowercase();
                     if name.contains("trip") {
-                        for (j, &val) in digital_channel.data.iter().enumerate() {
+                        let Some(states) = comtrade.digital(digital_index) else {
+                            continue;
+                        };
+
+                        for (j, &val) in states.iter().enumerate() {
                             if val == 1 {
                                 let trip_time = absolute_timestamps[j];
                                 if trip_time > sag_start_time {
                                     trip_found = true;
                                     let trip_delay = trip_time - sag_start_time;
-                                    analysis_notes.push(format!("Relay trip signal detected at {:.4} seconds.", trip_time));
+                                    analysis_notes.push(format!(
+                                        "Relay trip signal detected at {:.4} seconds.",
+                                        trip_time
+                                    ));
                                     analysis_notes.push(format!("Trip delay: {:.2} ms. Check if this is within acceptable limits.", trip_delay * 1000.0));
                                     break;
                                 }
@@ -410,7 +438,8 @@ pub fn parse_comtrade(
                 analysis_notes,
                 trigger_timestamp: trigger_time_seconds as f64,
             };
-            serde_wasm_bindgen::to_value(&info).map_err(|e| WasmComtradeError::SerializationError(e.to_string()))
+            serde_wasm_bindgen::to_value(&info)
+                .map_err(|e| WasmComtradeError::SerializationError(e.to_string()))
         }
         Ok(Err(e)) => Err(WasmComtradeError::ParseError(format!("{:?}", e))),
         Err(e) => {
@@ -444,8 +473,9 @@ mod tests {
     #[test]
     fn test_split_cff() {
         let cff_data = b"--- file type: CFG ---\nCFG CONTENT\n--- file type: DAT ---\nDAT CONTENT\n--- file type: INF ---\nINF CONTENT\n--- file type: HDR ---\nHDR CONTENT";
-        let re = BytesRegex::new(r"(?im-u)^---\s*file type:\s*(?P<file_type>[a-z]+).*?---").unwrap();
-        
+        let re =
+            BytesRegex::new(r"(?im-u)^---\s*file type:\s*(?P<file_type>[a-z]+).*?---").unwrap();
+
         let mut cfg_raw = None;
         let mut dat_raw = None;
         let mut hdr_raw = None;
@@ -456,16 +486,18 @@ mod tests {
             let m = matches[i];
             let header = &cff_data[m.start()..m.end()];
             let caps = re.captures(header).unwrap();
-            let file_type = std::str::from_utf8(&caps["file_type"]).unwrap().to_lowercase();
-            
+            let file_type = std::str::from_utf8(&caps["file_type"])
+                .unwrap()
+                .to_lowercase();
+
             let next_start = if i + 1 < matches.len() {
-                matches[i+1].start()
+                matches[i + 1].start()
             } else {
                 cff_data.len()
             };
-            
+
             let content = &cff_data[m.end()..next_start];
-            
+
             match file_type.as_str() {
                 "cfg" => cfg_raw = Some(content),
                 "dat" => dat_raw = Some(content),
@@ -475,9 +507,21 @@ mod tests {
             }
         }
 
-        assert_eq!(std::str::from_utf8(cfg_raw.unwrap()).unwrap().trim(), "CFG CONTENT");
-        assert_eq!(std::str::from_utf8(dat_raw.unwrap()).unwrap().trim(), "DAT CONTENT");
-        assert_eq!(std::str::from_utf8(inf_raw.unwrap()).unwrap().trim(), "INF CONTENT");
-        assert_eq!(std::str::from_utf8(hdr_raw.unwrap()).unwrap().trim(), "HDR CONTENT");
+        assert_eq!(
+            std::str::from_utf8(cfg_raw.unwrap()).unwrap().trim(),
+            "CFG CONTENT"
+        );
+        assert_eq!(
+            std::str::from_utf8(dat_raw.unwrap()).unwrap().trim(),
+            "DAT CONTENT"
+        );
+        assert_eq!(
+            std::str::from_utf8(inf_raw.unwrap()).unwrap().trim(),
+            "INF CONTENT"
+        );
+        assert_eq!(
+            std::str::from_utf8(hdr_raw.unwrap()).unwrap().trim(),
+            "HDR CONTENT"
+        );
     }
 }
