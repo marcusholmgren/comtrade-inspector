@@ -108,6 +108,10 @@ pub struct ComtradeInfo {
     pub digital_channels: Vec<SerializableDigitalChannel>,
     /// The timestamps for each data point, in Unix seconds.
     pub timestamps: Vec<f64>,
+    pub warnings: Vec<String>,
+    pub errors: Vec<String>,
+    pub analysis_notes: Vec<String>,
+    pub trigger_timestamp: f64,
 }
 
 /// Parses a COMTRADE file from its constituent parts.
@@ -136,6 +140,25 @@ pub fn parse_comtrade(
         .as_deref()
         .and_then(|label| encoding_rs::Encoding::for_label(label.as_bytes()))
         .unwrap_or(encoding_rs::UTF_8);
+
+    let raw_cfg_text = {
+    if let Some(cff_data) = &cff_file {
+        let re = BytesRegex::new(r"(?im-u)^---\s*file type:\s*cfg.*?---").unwrap();
+        let re_dat = BytesRegex::new(r"(?im-u)^---\s*file type:\s*dat.*?---").unwrap();
+        if let Some(m_cfg) = re.find(&cff_data) {
+            let start = m_cfg.end();
+            let end = re_dat.find(&cff_data).map(|m| m.start()).unwrap_or(cff_data.len());
+            let content = &cff_data[start..end];
+            Some(encoding.decode(content).0.into_owned())
+        } else {
+            None
+        }
+    } else if let Some(cfg_data) = &cfg_file {
+        Some(encoding.decode(cfg_data).0.into_owned())
+    } else {
+        None
+    }
+    };
 
     let result = panic::catch_unwind(move || {
         if let Some(cff_data) = cff_file {
@@ -264,6 +287,114 @@ pub fn parse_comtrade(
                 .map(SerializableDigitalChannel::from)
                 .collect();
 
+
+
+            let mut warnings = Vec::new();
+            let mut errors = Vec::new();
+            let mut analysis_notes = Vec::new();
+
+            if let Some(cfg_text) = &raw_cfg_text {
+                let lines: Vec<&str> = cfg_text.lines().filter(|l| !l.trim().is_empty()).collect();
+                if lines.len() > 1 {
+                    let parts: Vec<&str> = lines[1].split(',').collect();
+                    if parts.len() >= 3 {
+                        let expected_total: Result<u32, _> = parts[0].trim().parse();
+                        let expected_analog: Result<u32, _> = parts[1].trim().trim_end_matches(|c| c == 'A' || c == 'a').parse();
+                        let expected_digital: Result<u32, _> = parts[2].trim().trim_end_matches(|c| c == 'D' || c == 'd').parse();
+
+                        if let (Ok(tot), Ok(ana), Ok(dig)) = (expected_total, expected_analog, expected_digital) {
+                            if tot != ana + dig {
+                                errors.push(format!("The total number of channels ({}) does not match the sum of analog ({}) and digital ({}) channels.", tot, ana, dig));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Check frequency
+            if comtrade.line_frequency != 0.0 && (comtrade.line_frequency - 50.0).abs() > 1.0 && (comtrade.line_frequency - 60.0).abs() > 1.0 {
+                warnings.push(format!("Unexpected frequency detected ({} Hz).", comtrade.line_frequency));
+            }
+
+            // Detect voltage sag
+            let mut sag_detected = false;
+            let mut sag_start_time = 0.0;
+
+            for channel in &analog_channels {
+                let name = channel.name.to_lowercase();
+                let units = channel.units.to_lowercase();
+                if name.contains("v") || units == "v" || units == "kv" {
+                    let window_size = 50.min(channel.values.len());
+                    if window_size > 0 {
+                        let mut sum_sq_init = 0.0;
+                        for i in 0..window_size {
+                            sum_sq_init += channel.values[i] * channel.values[i];
+                        }
+                        let nominal_rms = (sum_sq_init / window_size as f64).sqrt();
+
+                        let sag_threshold = nominal_rms * 0.8;
+                        let mut sum_sq = 0.0;
+                        for i in 0..window_size {
+                            sum_sq += channel.values[i] * channel.values[i];
+                        }
+
+                        let mut rms = (sum_sq / window_size as f64).sqrt();
+                        if rms < sag_threshold {
+                            sag_detected = true;
+                            sag_start_time = absolute_timestamps[window_size - 1];
+                            analysis_notes.push(format!("Possible voltage sag detected on channel '{}' at {:.4} seconds.", channel.name, sag_start_time));
+                            break;
+                        }
+
+                        for i in window_size..channel.values.len() {
+                            sum_sq += channel.values[i] * channel.values[i];
+                            sum_sq -= channel.values[i - window_size] * channel.values[i - window_size];
+                            if sum_sq < 0.0 {
+                                sum_sq = 0.0;
+                            }
+                            rms = (sum_sq / window_size as f64).sqrt();
+                            if rms < sag_threshold {
+                                sag_detected = true;
+                                sag_start_time = absolute_timestamps[i];
+                                analysis_notes.push(format!("Possible voltage sag detected on channel '{}' at {:.4} seconds.", channel.name, sag_start_time));
+                                break;
+                            }
+                        }
+                        if sag_detected {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if sag_detected {
+                let mut trip_found = false;
+                for digital_channel in comtrade.status_channels.iter() {
+                    let name = digital_channel.config.name.to_lowercase();
+                    if name.contains("trip") {
+                        for (j, &val) in digital_channel.data.iter().enumerate() {
+                            if val == 1 {
+                                let trip_time = absolute_timestamps[j];
+                                if trip_time > sag_start_time {
+                                    trip_found = true;
+                                    let trip_delay = trip_time - sag_start_time;
+                                    analysis_notes.push(format!("Relay trip signal detected at {:.4} seconds.", trip_time));
+                                    analysis_notes.push(format!("Trip delay: {:.2} ms. Check if this is within acceptable limits.", trip_delay * 1000.0));
+                                    break;
+                                }
+                            }
+                        }
+                        if trip_found {
+                            break;
+                        }
+                    }
+                }
+
+                if !trip_found {
+                    warnings.push("No trip signal detected after the voltage sag.".to_string());
+                }
+            }
+
             let info = ComtradeInfo {
                 station: comtrade.station_name.clone(),
                 recording_device_id: comtrade.recording_device_id.clone(),
@@ -274,6 +405,10 @@ pub fn parse_comtrade(
                 analog_channels,
                 digital_channels,
                 timestamps: absolute_timestamps,
+                warnings,
+                errors,
+                analysis_notes,
+                trigger_timestamp: trigger_time_seconds as f64,
             };
             serde_wasm_bindgen::to_value(&info).map_err(|e| WasmComtradeError::SerializationError(e.to_string()))
         }

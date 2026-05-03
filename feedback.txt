@@ -1,0 +1,5 @@
+Feedback on Rust COMTRADE library (`marcusholmgren/comtrade` fork / `drewsilcock/comtrade`):
+
+1. **Total Channels Count Check**: The total channel count is parsed and validated against the sum of analog and digital channel counts internally in the parser (within `ChannelSizes::from_line`), but it does not expose this total count anywhere on the output `Comtrade` struct. If an application wants to implement a conformance check strictly based on comparing the CFG declared total with the sum, it must manually re-parse the second line of the CFG file.
+
+2. **Digital Channel Values**: The digital channels `status_channels` only expose `initial_value` (normal status value) easily when extracting `StatusChannel.config.normal_status_value`. The array of values themselves are stored in `digital_channel.data`. However, they are stored as raw `Vec<u8>` for statuses. The python `python-comtrade` provides a slightly more abstract API `rec.digital[index]` or similar to retrieve boolean/bit states per channel directly mapped, whereas the Rust one works well but requires users to map over `comtrade.status_channels`.

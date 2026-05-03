@@ -9,10 +9,11 @@
 	import 'uplot/dist/uPlot.min.css';
 	import type uPlot from 'uplot';
 
-	let { timestamps, series, title } = $props<{
+	let { timestamps, series, title, trigger_timestamp } = $props<{
 		timestamps: number[];
 		series: { name: string; values: number[]; color: string }[];
 		title: string;
+		trigger_timestamp: number;
 	}>();
 
 	let chartContainer: HTMLDivElement;
@@ -41,7 +42,26 @@
 				width: chartContainer ? chartContainer.clientWidth : 0,
 				height: 400,
 				series: uPlotSeries,
-				axes: [{ label: 'Time (s)' }, { label: 'Value' }]
+				axes: [{ label: 'Time (s)' }, { label: 'Value' }],
+				hooks: {
+					draw: [
+						(u) => {
+							if (trigger_timestamp !== undefined) {
+								const x = u.valToPos(trigger_timestamp, 'x', true);
+								const ctx = u.ctx;
+								ctx.save();
+								ctx.beginPath();
+								ctx.setLineDash([5, 5]);
+								ctx.strokeStyle = 'red';
+								ctx.lineWidth = 2;
+								ctx.moveTo(x, u.bbox.top);
+								ctx.lineTo(x, u.bbox.top + u.bbox.height);
+								ctx.stroke();
+								ctx.restore();
+							}
+						}
+					]
+				}
 			};
 			plot = new uPlotClass(opts, data as uPlot.AlignedData, chartContainer);
 		}
