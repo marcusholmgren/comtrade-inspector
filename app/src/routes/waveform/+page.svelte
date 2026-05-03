@@ -24,6 +24,7 @@
 		analog_channels: Channel[];
 		digital_channels: { index: number }[];
 		timestamps: number[];
+		trigger_timestamp: number;
 	}
 
 	let result = $state<Result | null>(null);
@@ -196,6 +197,7 @@
 						timestamps={result.timestamps}
 						series={combinedSeries}
 						title="Combined Analog Waveforms"
+						trigger_timestamp={result.trigger_timestamp}
 					/>
 				</div>
 			{:else}
@@ -218,6 +220,7 @@
 										}
 									]}
 									title={channel.name}
+									trigger_timestamp={result.trigger_timestamp}
 								/>
 							</div>
 						</div>

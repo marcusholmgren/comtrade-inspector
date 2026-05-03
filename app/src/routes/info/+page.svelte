@@ -41,6 +41,9 @@
 		frequency: number;
 		analog_channels: AnalogChannel[];
 		digital_channels: DigitalChannel[];
+		warnings: string[];
+		errors: string[];
+		analysis_notes: string[];
 	}
 
 	let result: ComtradeInfo | null = null;
@@ -152,6 +155,44 @@
 			</div>
 		{:else}
 			<p>No analysis result available. Please upload a file first.</p>
+		{/if}
+	</section>
+	<section class="rounded-lg bg-[#181C21] p-6 print:bg-transparent">
+		<h3 class="mb-4 text-xl font-semibold">Analysis Results</h3>
+		{#if result}
+			{#if result.errors && result.errors.length > 0}
+				<div class="mb-4 rounded-md bg-red-900/50 p-4 border border-red-500/50 text-red-200">
+					<h4 class="font-bold mb-2">Errors</h4>
+					<ul class="list-disc pl-5">
+						{#each result.errors as error}
+							<li>{error}</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+			{#if result.warnings && result.warnings.length > 0}
+				<div class="mb-4 rounded-md bg-yellow-900/50 p-4 border border-yellow-500/50 text-yellow-200">
+					<h4 class="font-bold mb-2">Warnings</h4>
+					<ul class="list-disc pl-5">
+						{#each result.warnings as warning}
+							<li>{warning}</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+			{#if result.analysis_notes && result.analysis_notes.length > 0}
+				<div class="mb-4 rounded-md bg-blue-900/50 p-4 border border-blue-500/50 text-blue-200">
+					<h4 class="font-bold mb-2">Analysis Notes</h4>
+					<ul class="list-disc pl-5">
+						{#each result.analysis_notes as note}
+							<li>{note}</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+			{#if (!result.errors || result.errors.length === 0) && (!result.warnings || result.warnings.length === 0) && (!result.analysis_notes || result.analysis_notes.length === 0)}
+				<p class="text-gray-400">No issues or specific patterns detected.</p>
+			{/if}
 		{/if}
 	</section>
 	<section>
