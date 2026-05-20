@@ -7,7 +7,7 @@ use comtrade::{ComtradeParserBuilder, DataFormat, StatusChannel};
 use encoding_rs;
 use regex::bytes::Regex as BytesRegex;
 use serde::Serialize;
-use std::{io::BufReader, panic};
+use std::panic;
 use wasm_bindgen::prelude::*;
 
 pub const GIT_HASH: &str = env!("GIT_HASH");
@@ -64,6 +64,20 @@ pub struct SerializableAnalogChannel {
     pub circuit_component_being_monitored: String,
     /// The waveform data for this channel.
     pub values: Vec<f64>,
+    /// The primary scaled waveform data for this channel.
+    pub primary_values: Vec<f64>,
+    /// The secondary scaled waveform data for this channel.
+    pub secondary_values: Vec<f64>,
+    /// The scaling mode (e.g., "Primary", "Secondary").
+    pub scaling_mode: String,
+    /// The primary factor.
+    pub primary_factor: f64,
+    /// The secondary factor.
+    pub secondary_factor: f64,
+    /// The skew offset in microseconds.
+    pub skew: f64,
+    /// The absolute skew-adjusted timestamps for this channel.
+    pub skew_timestamps: Vec<f64>,
 }
 
 /// Represents a single digital channel from a COMTRADE file, formatted for serialization.
@@ -221,20 +235,20 @@ pub fn parse_comtrade(
             let decoded_hdr = hdr_raw.map(|b| encoding.decode(b).0);
             let decoded_inf = inf_raw.map(|b| encoding.decode(b).0);
 
-            if let Some(cfg) = &decoded_cfg {
+            if let Some(cfg) = decoded_cfg {
                 let mut builder = ComtradeParserBuilder::new();
-                builder = builder.cfg_file(BufReader::new(cfg.as_bytes()));
+                builder = builder.cfg_file(std::io::Cursor::new(cfg.into_bytes()));
 
                 if let Some(dat_bytes) = dat_raw {
-                    builder = builder.dat_file(BufReader::new(dat_bytes));
+                    builder = builder.dat_file(std::io::Cursor::new(dat_bytes.to_vec()));
                 }
 
-                if let Some(hdr) = &decoded_hdr {
-                    builder = builder.hdr_file(BufReader::new(hdr.as_bytes()));
+                if let Some(hdr) = decoded_hdr {
+                    builder = builder.hdr_file(std::io::Cursor::new(hdr.into_owned().into_bytes()));
                 }
 
-                if let Some(inf) = &decoded_inf {
-                    builder = builder.inf_file(BufReader::new(inf.as_bytes()));
+                if let Some(inf) = decoded_inf {
+                    builder = builder.inf_file(std::io::Cursor::new(inf.into_owned().into_bytes()));
                 }
 
                 builder.build().parse()
@@ -243,8 +257,8 @@ pub fn parse_comtrade(
             }
         } else if let (Some(cfg_data), Some(dat_data)) = (cfg_file, dat_file) {
             let (decoded_cfg, _, _) = encoding.decode(&cfg_data);
-            let cfg_reader = BufReader::new(decoded_cfg.as_bytes());
-            let dat_reader = BufReader::new(dat_data.as_ref()); // DAT file is binary
+            let cfg_reader = std::io::Cursor::new(decoded_cfg.into_owned().into_bytes());
+            let dat_reader = std::io::Cursor::new(dat_data.into_vec()); // DAT file is binary
             ComtradeParserBuilder::new()
                 .cfg_file(cfg_reader)
                 .dat_file(dat_reader)
@@ -284,20 +298,43 @@ pub fn parse_comtrade(
             let analog_channels: Vec<SerializableAnalogChannel> = comtrade
                 .analog_channels
                 .iter()
-                .map(|ch| SerializableAnalogChannel {
-                    index: ch.config.index.get() as u32,
-                    name: ch.config.name.clone(),
-                    units: ch.config.units.clone(),
-                    min_value: ch.config.min_value,
-                    max_value: ch.config.max_value,
-                    multiplier: ch.config.multiplier,
-                    offset_adder: ch.config.offset_adder,
-                    phase: ch.config.phase.clone(),
-                    circuit_component_being_monitored: ch
-                        .config
-                        .circuit_component_being_monitored
-                        .clone(),
-                    values: ch.data.clone(),
+                .map(|ch| {
+                    let primary_values: Vec<f64> = (0..ch.data.len())
+                        .map(|i| ch.primary_value(i).unwrap_or(ch.data[i]))
+                        .collect();
+                    let secondary_values: Vec<f64> = (0..ch.data.len())
+                        .map(|i| ch.secondary_value(i).unwrap_or(ch.data[i]))
+                        .collect();
+                    let scaling_mode = match ch.config.scaling_mode {
+                        comtrade::AnalogScalingMode::Primary => "Primary".to_string(),
+                        comtrade::AnalogScalingMode::Secondary => "Secondary".to_string(),
+                    };
+                    let skew_timestamps: Vec<f64> = (0..ch.data.len())
+                        .map(|i| ch.timestamp_at(i, &absolute_timestamps).unwrap_or(absolute_timestamps[i]))
+                        .collect();
+
+                    SerializableAnalogChannel {
+                        index: ch.config.index.get() as u32,
+                        name: ch.config.name.clone(),
+                        units: ch.config.units.clone(),
+                        min_value: ch.config.min_value,
+                        max_value: ch.config.max_value,
+                        multiplier: ch.config.multiplier,
+                        offset_adder: ch.config.offset_adder,
+                        phase: ch.config.phase.clone(),
+                        circuit_component_being_monitored: ch
+                            .config
+                            .circuit_component_being_monitored
+                            .clone(),
+                        values: ch.data.clone(),
+                        primary_values,
+                        secondary_values,
+                        scaling_mode,
+                        primary_factor: ch.config.primary_factor,
+                        secondary_factor: ch.config.secondary_factor,
+                        skew: ch.config.skew,
+                        skew_timestamps,
+                    }
                 })
                 .collect();
 
