@@ -17,6 +17,13 @@
 		name: string;
 		units: string;
 		values: number[];
+		primary_values: number[];
+		secondary_values: number[];
+		skew_timestamps: number[];
+		scaling_mode: string;
+		skew: number;
+		primary_factor: number;
+		secondary_factor: number;
 		circuit_component_being_monitored: string;
 	}
 
@@ -30,6 +37,14 @@
 	let result = $state<Result | null>(null);
 	let selectedChannels = $state<number[]>([]);
 	let combineChannels = $state(false);
+	let applySkew = $state(false);
+	let plottingScale = $state<'standard' | 'primary' | 'secondary'>('standard');
+
+	const getChannelValues = (channel: Channel, scale: 'standard' | 'primary' | 'secondary') => {
+		if (scale === 'primary') return channel.primary_values;
+		if (scale === 'secondary') return channel.secondary_values;
+		return channel.values;
+	};
 
 	const colors = [
 		'#e6194b',
@@ -59,7 +74,7 @@
 			const channel = result!.analog_channels.find((c: Channel) => c.index === channelIndex)!;
 			return {
 				name: channel.name,
-				values: channel.values,
+				values: getChannelValues(channel, plottingScale),
 				color: colors[channelIndex % colors.length]
 			};
 		})
@@ -185,8 +200,27 @@
 				</div>
 			{/if}
 
-			<div class="mt-4">
-				<Switch bind:checked={combineChannels} label="Combine channels in one plot" />
+			<div class="mt-6 flex flex-wrap gap-x-8 gap-y-4 rounded-lg bg-gray-800/40 p-4 border border-gray-700/50">
+				<div>
+					<label for="scale-select" class="block text-sm font-semibold text-gray-300">Plotting Scale</label>
+					<select
+						id="scale-select"
+						bind:value={plottingScale}
+						class="mt-1 block rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+					>
+						<option value="standard">Standard (Configured)</option>
+						<option value="primary">Primary Scaling</option>
+						<option value="secondary">Secondary Scaling</option>
+					</select>
+				</div>
+				<div class="flex items-end">
+					<Switch bind:checked={combineChannels} label="Combine channels in one plot" />
+				</div>
+				{#if !combineChannels}
+					<div class="flex items-end">
+						<Switch bind:checked={applySkew} label="Apply Channel Skew Offset" />
+					</div>
+				{/if}
 			</div>
 		</div>
 
@@ -207,15 +241,18 @@
 						<div>
 							<h3 class="text-lg font-semibold">{channel.name}</h3>
 							<p class="text-sm text-gray-400">
-								{channel.circuit_component_being_monitored} - {channel.units}
+								{channel.circuit_component_being_monitored} - {channel.units} 
+								{#if channel.scaling_mode}
+									({channel.scaling_mode} scaled, Skew: {channel.skew} μs)
+								{/if}
 							</p>
 							<div class="mt-4 rounded-lg bg-gray-800 p-4">
 								<AnalogWaveform
-									timestamps={result.timestamps}
+									timestamps={applySkew ? (channel.skew_timestamps || result.timestamps) : result.timestamps}
 									series={[
 										{
 											name: channel.name,
-											values: channel.values,
+											values: getChannelValues(channel, plottingScale),
 											color: colors[channelIndex % colors.length]
 										}
 									]}

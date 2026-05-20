@@ -70,7 +70,7 @@ dependencies = [
 [[package]]
 name = "comtrade"
 version = "0.2.2"
-source = "git+https://github.com/marcusholmgren/comtrade.git?rev=18d81308e2361a2e104431e6537ad2203f1d582e#18d81308e2361a2e104431e6537ad2203f1d582e"
+source = "git+https://github.com/marcusholmgren/comtrade.git?rev=25ec54f6dc82f3ce4d83798cd010db15327e7ee9#25ec54f6dc82f3ce4d83798cd010db15327e7ee9"
 dependencies = [
  "byteorder",
  "chrono",

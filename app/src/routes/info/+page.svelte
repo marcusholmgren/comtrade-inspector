@@ -18,6 +18,11 @@
 		max_value: number;
 		multiplier: number;
 		offset_adder: number;
+		phase: string;
+		scaling_mode: string;
+		primary_factor: number;
+		secondary_factor: number;
+		skew: number;
 	}
 
 	interface FileInfo {
@@ -199,12 +204,17 @@
 		<h3 class="mb-4 text-xl font-semibold">Analog Channels</h3>
 		<div class="overflow-x-auto rounded-lg bg-[#181C21]">
 			<table class="min-w-full text-sm">
-				<thead class="bg-[#283039] text-left">
+				<thead class="bg-[#283039] text-left text-gray-200">
 					<tr>
 						<th class="p-3">Channel</th>
 						<th class="p-3">Circuit</th>
 						<th class="p-3">Name</th>
+						<th class="p-3">Phase</th>
 						<th class="p-3">Units</th>
+						<th class="p-3">Scaling Mode</th>
+						<th class="p-3">Primary Factor</th>
+						<th class="p-3">Secondary Factor</th>
+						<th class="p-3">Skew (μs)</th>
 						<th class="p-3">Min</th>
 						<th class="p-3">Max</th>
 						<th class="p-3">Multiplier</th>
@@ -215,10 +225,19 @@
 					{#if result}
 						{#each result.analog_channels as channel (channel.index)}
 							<tr class="border-b border-[#3b4754]">
-								<td class="p-3 font-medium">{channel.index}</td>
+								<td class="p-3 font-medium text-white">{channel.index}</td>
 								<td class="p-3 text-[#9dabb9]">{channel.circuit_component_being_monitored}</td>
-								<td class="p-3 text-[#9dabb9]">{channel.name}</td>
+								<td class="p-3 text-[#9dabb9] font-semibold">{channel.name}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.phase || '—'}</td>
 								<td class="p-3 text-[#9dabb9]">{channel.units}</td>
+								<td class="p-3 text-[#9dabb9]">
+									<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold {channel.scaling_mode === 'Primary' ? 'bg-indigo-400/10 text-indigo-400 ring-1 ring-inset ring-indigo-400/30' : 'bg-pink-400/10 text-pink-400 ring-1 ring-inset ring-pink-400/30'}">
+										{channel.scaling_mode}
+									</span>
+								</td>
+								<td class="p-3 text-[#9dabb9]">{channel.primary_factor}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.secondary_factor}</td>
+								<td class="p-3 text-[#9dabb9]">{channel.skew}</td>
 								<td class="p-3 text-[#9dabb9]">{channel.min_value}</td>
 								<td class="p-3 text-[#9dabb9]">{channel.max_value}</td>
 								<td class="p-3 text-[#9dabb9]">{channel.multiplier}</td>
