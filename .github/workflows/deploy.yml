@@ -1,3 +1,8 @@
+# .github/workflows/deploy.yml
+# This file configures the GitHub Actions CI/CD pipeline to build and deploy the COMTRADE inspector Svelte SPA to GitHub Pages.
+# This file exists to automate continuous integration and deployment of the application.
+# RELEVANT FILES: app/package.json, comtrade_rust/Cargo.toml
+
 name: Deploy to GitHub Pages
 
 on:
@@ -9,6 +14,9 @@ permissions:
   contents: read
   pages: write
   id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-deploy:
