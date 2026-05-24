@@ -1,7 +1,13 @@
 <script lang="ts">
+	// app/src/routes/+layout.svelte
+	// Defines the main layout structure, sidebar integration, and PWA manifest loading.
+	// This file exists to establish a consistent shell across all routes and load the service worker manifest.
+	// RELEVANT FILES: app/src/routes/+layout.ts, app/vite.config.ts, app/src/app.d.ts
+
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import { asset } from '$app/paths';
+	import { pwaInfo } from 'virtual:pwa-info';
 
 	let { children } = $props();
 
@@ -11,6 +17,8 @@
 		isSidebarOpen = !isSidebarOpen;
 	}
 
+	const webManifestLink = pwaInfo ? pwaInfo.webManifest.linkTag : '';
+
 	import { onMount } from 'svelte';
 	onMount(() => {
 		// Log app build info on load
@@ -19,7 +27,10 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" type="image/svg+xml" href={asset('/favicon.svg')} />
+	<link rel="alternate icon" href={asset('/favicon.svg')} />
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html webManifestLink}
 	<style>
 		:root {
 			--primary-color: #1173d4;

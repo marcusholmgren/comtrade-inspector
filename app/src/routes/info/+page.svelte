@@ -166,30 +166,32 @@
 		<h3 class="mb-4 text-xl font-semibold">Analysis Results</h3>
 		{#if result}
 			{#if result.errors && result.errors.length > 0}
-				<div class="mb-4 rounded-md bg-red-900/50 p-4 border border-red-500/50 text-red-200">
-					<h4 class="font-bold mb-2">Errors</h4>
+				<div class="mb-4 rounded-md border border-red-500/50 bg-red-900/50 p-4 text-red-200">
+					<h4 class="mb-2 font-bold">Errors</h4>
 					<ul class="list-disc pl-5">
-						{#each result.errors as error}
+						{#each result.errors as error, i (i)}
 							<li>{error}</li>
 						{/each}
 					</ul>
 				</div>
 			{/if}
 			{#if result.warnings && result.warnings.length > 0}
-				<div class="mb-4 rounded-md bg-yellow-900/50 p-4 border border-yellow-500/50 text-yellow-200">
-					<h4 class="font-bold mb-2">Warnings</h4>
+				<div
+					class="mb-4 rounded-md border border-yellow-500/50 bg-yellow-900/50 p-4 text-yellow-200"
+				>
+					<h4 class="mb-2 font-bold">Warnings</h4>
 					<ul class="list-disc pl-5">
-						{#each result.warnings as warning}
+						{#each result.warnings as warning, i (i)}
 							<li>{warning}</li>
 						{/each}
 					</ul>
 				</div>
 			{/if}
 			{#if result.analysis_notes && result.analysis_notes.length > 0}
-				<div class="mb-4 rounded-md bg-blue-900/50 p-4 border border-blue-500/50 text-blue-200">
-					<h4 class="font-bold mb-2">Analysis Notes</h4>
+				<div class="mb-4 rounded-md border border-blue-500/50 bg-blue-900/50 p-4 text-blue-200">
+					<h4 class="mb-2 font-bold">Analysis Notes</h4>
 					<ul class="list-disc pl-5">
-						{#each result.analysis_notes as note}
+						{#each result.analysis_notes as note, i (i)}
 							<li>{note}</li>
 						{/each}
 					</ul>
@@ -227,11 +229,16 @@
 							<tr class="border-b border-[#3b4754]">
 								<td class="p-3 font-medium text-white">{channel.index}</td>
 								<td class="p-3 text-[#9dabb9]">{channel.circuit_component_being_monitored}</td>
-								<td class="p-3 text-[#9dabb9] font-semibold">{channel.name}</td>
+								<td class="p-3 font-semibold text-[#9dabb9]">{channel.name}</td>
 								<td class="p-3 text-[#9dabb9]">{channel.phase || '—'}</td>
 								<td class="p-3 text-[#9dabb9]">{channel.units}</td>
 								<td class="p-3 text-[#9dabb9]">
-									<span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold {channel.scaling_mode === 'Primary' ? 'bg-indigo-400/10 text-indigo-400 ring-1 ring-inset ring-indigo-400/30' : 'bg-pink-400/10 text-pink-400 ring-1 ring-inset ring-pink-400/30'}">
+									<span
+										class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold {channel.scaling_mode ===
+										'Primary'
+											? 'bg-indigo-400/10 text-indigo-400 ring-1 ring-indigo-400/30 ring-inset'
+											: 'bg-pink-400/10 text-pink-400 ring-1 ring-pink-400/30 ring-inset'}"
+									>
 										{channel.scaling_mode}
 									</span>
 								</td>
