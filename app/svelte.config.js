@@ -1,3 +1,8 @@
+// app/svelte.config.js
+// Configures the SvelteKit project options including adapter-static and PWA registration settings.
+// This file exists to set up compile options, preprocessors, and routing base paths.
+// RELEVANT FILES: app/vite.config.ts, app/package.json
+
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
@@ -18,7 +23,10 @@ const config = {
 			precompress: false
 		}),
 		paths: {
-			base: process.env.BASE_URL || ''
+			base: process.env.BASE_URL && process.env.BASE_URL !== '/' ? process.env.BASE_URL : ''
+		},
+		serviceWorker: {
+			register: false
 		}
 	}
 };

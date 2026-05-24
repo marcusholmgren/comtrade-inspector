@@ -200,13 +200,17 @@
 				</div>
 			{/if}
 
-			<div class="mt-6 flex flex-wrap gap-x-8 gap-y-4 rounded-lg bg-gray-800/40 p-4 border border-gray-700/50">
+			<div
+				class="mt-6 flex flex-wrap gap-x-8 gap-y-4 rounded-lg border border-gray-700/50 bg-gray-800/40 p-4"
+			>
 				<div>
-					<label for="scale-select" class="block text-sm font-semibold text-gray-300">Plotting Scale</label>
+					<label for="scale-select" class="block text-sm font-semibold text-gray-300"
+						>Plotting Scale</label
+					>
 					<select
 						id="scale-select"
 						bind:value={plottingScale}
-						class="mt-1 block rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+						class="mt-1 block rounded-md border-gray-600 bg-gray-700 text-sm text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
 					>
 						<option value="standard">Standard (Configured)</option>
 						<option value="primary">Primary Scaling</option>
@@ -241,14 +245,16 @@
 						<div>
 							<h3 class="text-lg font-semibold">{channel.name}</h3>
 							<p class="text-sm text-gray-400">
-								{channel.circuit_component_being_monitored} - {channel.units} 
+								{channel.circuit_component_being_monitored} - {channel.units}
 								{#if channel.scaling_mode}
 									({channel.scaling_mode} scaled, Skew: {channel.skew} μs)
 								{/if}
 							</p>
 							<div class="mt-4 rounded-lg bg-gray-800 p-4">
 								<AnalogWaveform
-									timestamps={applySkew ? (channel.skew_timestamps || result.timestamps) : result.timestamps}
+									timestamps={applySkew
+										? channel.skew_timestamps || result.timestamps
+										: result.timestamps}
 									series={[
 										{
 											name: channel.name,

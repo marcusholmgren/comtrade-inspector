@@ -310,7 +310,10 @@ pub fn parse_comtrade(
                         comtrade::AnalogScalingMode::Secondary => "Secondary".to_string(),
                     };
                     let skew_timestamps: Vec<f64> = (0..ch.data.len())
-                        .map(|i| ch.timestamp_at(i, &absolute_timestamps).unwrap_or(absolute_timestamps[i]))
+                        .map(|i| {
+                            ch.timestamp_at(i, &absolute_timestamps)
+                                .unwrap_or(absolute_timestamps[i])
+                        })
                         .collect();
 
                     SerializableAnalogChannel {

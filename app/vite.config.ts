@@ -1,9 +1,15 @@
+// app/vite.config.ts
+// Configures Vite, Vitest, and SvelteKitPWA plugin for the application.
+// This file exists to define the build options, test suites, and PWA setup.
+// RELEVANT FILES: app/svelte.config.js, app/package.json, app/src/app.d.ts
+
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vitest/config';
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { playwright } from '@vitest/browser-playwright';
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 const getGitHash = () => {
 	try {
@@ -22,12 +28,62 @@ const getVersion = () => {
 	}
 };
 
+const base = process.env.BASE_URL || '';
+
 export default defineConfig({
 	define: {
 		__APP_VERSION__: JSON.stringify(getVersion()),
 		__GIT_HASH__: JSON.stringify(getGitHash())
 	},
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [
+		tailwindcss(),
+		sveltekit(),
+		SvelteKitPWA({
+			registerType: 'autoUpdate',
+			manifest: {
+				name: 'COMTRADE inspector',
+				short_name: 'COMTRADE inspector',
+				description: 'Common Format for Transient Data Exchange (COMTRADE) data analysis tools',
+				theme_color: '#111418',
+				background_color: '#111418',
+				display: 'standalone',
+				start_url: base ? `${base}/` : '/',
+				scope: base ? `${base}/` : '/',
+				icons: [
+					{
+						src: base ? `${base}/favicon.svg` : '/favicon.svg',
+						sizes: 'any',
+						type: 'image/svg+xml',
+						purpose: 'any'
+					},
+					{
+						src: base ? `${base}/favicon.svg` : '/favicon.svg',
+						sizes: 'any',
+						type: 'image/svg+xml',
+						purpose: 'maskable'
+					}
+				],
+				screenshots: [
+					{
+						src: base ? `${base}/comtrade-inspector.jpg` : '/comtrade-inspector.jpg',
+						sizes: '1080x720',
+						type: 'image/jpeg',
+						form_factor: 'wide',
+						label: 'COMTRADE Inspector Dashboard'
+					}
+				]
+			},
+			workbox: {
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,webmanifest}'],
+				additionalManifestEntries: [
+					{
+						url: base ? `${base}/index.html` : '/index.html',
+						revision: getGitHash()
+					}
+				]
+			}
+		})
+	],
 	server: {
 		fs: {
 			allow: ['..']
