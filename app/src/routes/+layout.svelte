@@ -1,3 +1,7 @@
+<!-- app/src/routes/+layout.svelte -->
+<!-- The root layout component of the SvelteKit application, providing the sidebar and main layout. -->
+<!-- This file exists to define global styles, initialize common resources, log build details, and register the PWA service worker. -->
+<!-- RELEVANT FILES: app/src/routes/+layout.ts, app/src/app.html, app/vite.config.ts -->
 <script lang="ts">
 	// app/src/routes/+layout.svelte
 	// Defines the main layout structure, sidebar integration, and PWA manifest loading.
@@ -20,9 +24,27 @@
 	const webManifestLink = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 
 	import { onMount } from 'svelte';
-	onMount(() => {
+	onMount(async () => {
 		// Log app build info on load
 		console.log(`comtrade-inspector v${__APP_VERSION__} (${__GIT_HASH__})`);
+
+		// Register service worker if supported and not in dev environment
+		if ('serviceWorker' in navigator && !import.meta.env.DEV) {
+			try {
+				const { registerSW } = await import('virtual:pwa-register');
+				registerSW({
+					immediate: true,
+					onNeedRefresh() {
+						console.log('New app version is available. Please reload.');
+					},
+					onOfflineReady() {
+						console.log('COMTRADE Inspector is ready for offline use!');
+					}
+				});
+			} catch (error) {
+				console.error('Failed to register service worker:', error);
+			}
+		}
 	});
 </script>
 
