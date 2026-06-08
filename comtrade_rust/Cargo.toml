@@ -21,3 +21,4 @@ thiserror = "1"
 js-sys = "0.3.91"
 web-sys = { version = "0.3.91", features = ["console"] }
 regex = "1.11"
+chrono = "0.4.45"
