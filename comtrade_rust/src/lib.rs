@@ -273,7 +273,7 @@ pub fn parse_comtrade(
 
     match result {
         Ok(Ok(comtrade)) => {
-            let trigger_time_seconds = comtrade.trigger_time.and_utc().timestamp();
+            let trigger_offset_seconds = (comtrade.trigger_time - comtrade.start_time).num_microseconds().unwrap_or(0) as f64 / 1_000_000.0;
 
             let mut timestamps_us = Vec::new();
             let mut current_time_us = 0.0;
@@ -290,9 +290,9 @@ pub fn parse_comtrade(
                 last_end_sample = rate_info.end_sample_number;
             }
 
-            let absolute_timestamps: Vec<f64> = timestamps_us
+            let timestamps: Vec<f64> = timestamps_us
                 .iter()
-                .map(|&t_us| trigger_time_seconds as f64 + (t_us / 1_000_000.0))
+                .map(|&t_us| t_us / 1_000_000.0)
                 .collect();
 
             let analog_channels: Vec<SerializableAnalogChannel> = comtrade
@@ -311,8 +311,8 @@ pub fn parse_comtrade(
                     };
                     let skew_timestamps: Vec<f64> = (0..ch.data.len())
                         .map(|i| {
-                            ch.timestamp_at(i, &absolute_timestamps)
-                                .unwrap_or(absolute_timestamps[i])
+                            ch.timestamp_at(i, &timestamps)
+                                .unwrap_or(timestamps[i])
                         })
                         .collect();
 
@@ -398,7 +398,7 @@ pub fn parse_comtrade(
                         let mut rms = (sum_sq / window_size as f64).sqrt();
                         if rms < sag_threshold {
                             sag_detected = true;
-                            sag_start_time = absolute_timestamps[window_size - 1];
+                            sag_start_time = timestamps[window_size - 1];
                             analysis_notes.push(format!(
                                 "Possible voltage sag detected on channel '{}' at {:.4} seconds.",
                                 channel.name, sag_start_time
@@ -416,7 +416,7 @@ pub fn parse_comtrade(
                             rms = (sum_sq / window_size as f64).sqrt();
                             if rms < sag_threshold {
                                 sag_detected = true;
-                                sag_start_time = absolute_timestamps[i];
+                                sag_start_time = timestamps[i];
                                 analysis_notes.push(format!("Possible voltage sag detected on channel '{}' at {:.4} seconds.", channel.name, sag_start_time));
                                 break;
                             }
@@ -439,7 +439,7 @@ pub fn parse_comtrade(
 
                         for (j, &val) in states.iter().enumerate() {
                             if val == 1 {
-                                let trip_time = absolute_timestamps[j];
+                                let trip_time = timestamps[j];
                                 if trip_time > sag_start_time {
                                     trip_found = true;
                                     let trip_delay = trip_time - sag_start_time;
@@ -472,11 +472,11 @@ pub fn parse_comtrade(
                 frequency: comtrade.line_frequency,
                 analog_channels,
                 digital_channels,
-                timestamps: absolute_timestamps,
+                timestamps,
                 warnings,
                 errors,
                 analysis_notes,
-                trigger_timestamp: trigger_time_seconds as f64,
+                trigger_timestamp: trigger_offset_seconds,
             };
             serde_wasm_bindgen::to_value(&info)
                 .map_err(|e| WasmComtradeError::SerializationError(e.to_string()))
