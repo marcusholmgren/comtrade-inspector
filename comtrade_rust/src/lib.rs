@@ -273,10 +273,11 @@ pub fn parse_comtrade(
 
     match result {
         Ok(Ok(comtrade)) => {
-            let trigger_offset_seconds = (comtrade.trigger_time - comtrade.start_time).num_microseconds().unwrap_or(0) as f64 / 1_000_000.0;
+            let trigger_timestamp = comtrade.trigger_time.and_utc().timestamp_micros() as f64 / 1_000_000.0;
+            let start_time_seconds = comtrade.start_time.and_utc().timestamp_micros() as f64 / 1_000_000.0;
 
             let mut timestamps_us = Vec::new();
-            let mut current_time_us = 0.0;
+            let mut current_time_us = comtrade.start_time.and_utc().timestamp_micros() as f64;
             let mut last_end_sample = 0;
 
             for rate_info in &comtrade.sampling_rates {
@@ -401,7 +402,7 @@ pub fn parse_comtrade(
                             sag_start_time = timestamps[window_size - 1];
                             analysis_notes.push(format!(
                                 "Possible voltage sag detected on channel '{}' at {:.4} seconds.",
-                                channel.name, sag_start_time
+                                channel.name, sag_start_time - start_time_seconds
                             ));
                             break;
                         }
@@ -417,7 +418,7 @@ pub fn parse_comtrade(
                             if rms < sag_threshold {
                                 sag_detected = true;
                                 sag_start_time = timestamps[i];
-                                analysis_notes.push(format!("Possible voltage sag detected on channel '{}' at {:.4} seconds.", channel.name, sag_start_time));
+                                analysis_notes.push(format!("Possible voltage sag detected on channel '{}' at {:.4} seconds.", channel.name, sag_start_time - start_time_seconds));
                                 break;
                             }
                         }
@@ -445,7 +446,7 @@ pub fn parse_comtrade(
                                     let trip_delay = trip_time - sag_start_time;
                                     analysis_notes.push(format!(
                                         "Relay trip signal detected at {:.4} seconds.",
-                                        trip_time
+                                        trip_time - start_time_seconds
                                     ));
                                     analysis_notes.push(format!("Trip delay: {:.2} ms. Check if this is within acceptable limits.", trip_delay * 1000.0));
                                     break;
@@ -476,7 +477,7 @@ pub fn parse_comtrade(
                 warnings,
                 errors,
                 analysis_notes,
-                trigger_timestamp: trigger_offset_seconds,
+                trigger_timestamp,
             };
             serde_wasm_bindgen::to_value(&info)
                 .map_err(|e| WasmComtradeError::SerializationError(e.to_string()))
